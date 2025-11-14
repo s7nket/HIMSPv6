@@ -1,6 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { officerAPI } from '../../utils/api';
 import { toast } from 'react-toastify';
+import { motion } from 'framer-motion';
+import { 
+  Package, 
+  BarChart2, 
+  Users, 
+  FileText,
+  DollarSign,
+  Truck,
+  Eye // 🟢 Icon for button
+} from 'lucide-react';
 
 const ViewInventory = () => {
   const [equipment, setEquipment] = useState([]);
@@ -51,6 +61,16 @@ const ViewInventory = () => {
     }
   };
 
+  // Animation Variants
+  const containerVariants = {
+    hidden: { opacity: 0, y: 15 },
+    visible: { opacity: 1, y: 0, transition: { staggerChildren: 0.05 } }
+  };
+  const itemVariants = {
+    hidden: { opacity: 0 },
+    visible: { opacity: 1 }
+  };
+
   if (loading) {
     return (
       <div className="loading-state">
@@ -62,8 +82,12 @@ const ViewInventory = () => {
 
   return (
     <div className="view-inventory">
-      {/* 🟢 REMOVED header and using search-filters as the new top bar */}
-      <div className="search-filters" style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '24px', marginBottom: '24px' }}>
+      <motion.div 
+        className="search-filters" 
+        style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '24px', marginBottom: '24px' }}
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
         <input
           type="text"
           placeholder="Search equipment pools..."
@@ -81,7 +105,7 @@ const ViewInventory = () => {
             <option key={category} value={category}>{category}</option>
           ))}
         </select>
-      </div>
+      </motion.div>
 
       {equipment.length === 0 ? (
         <div className="no-data">
@@ -90,7 +114,12 @@ const ViewInventory = () => {
         </div>
       ) : (
         <>
-          <div className="inventory-table">
+          <motion.div 
+            className="inventory-table"
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+          >
             <table className="table">
               <thead>
                 <tr>
@@ -106,7 +135,7 @@ const ViewInventory = () => {
               </thead>
               <tbody>
                 {equipment.map((pool) => (
-                  <tr key={pool._id}>
+                  <motion.tr key={pool._id} variants={itemVariants}>
                     <td>
                       <strong>{pool.poolName}</strong>
                       <div style={{ fontSize: '12px', color: 'var(--text-light)' }}>{pool.manufacturer}</div>
@@ -125,21 +154,26 @@ const ViewInventory = () => {
                     <td>{pool.issuedCount}</td>
                     <td>{pool.location}</td>
                     <td>
+                      {/* 🟢 Enhanced Button */}
                       <button
                         onClick={() => handleViewDetails(pool._id)}
                         className="btn btn-secondary btn-sm"
                       >
-                        Details
+                        <Eye size={14} /> Details
                       </button>
                     </td>
-                  </tr>
+                  </motion.tr>
                 ))}
               </tbody>
             </table>
-          </div>
+          </motion.div>
 
           {totalPages > 1 && (
-            <div className="pagination">
+            <motion.div 
+              className="pagination"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+            >
               <button
                 onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                 disabled={currentPage === 1}
@@ -155,7 +189,7 @@ const ViewInventory = () => {
               >
                 Next
               </button>
-            </div>
+            </motion.div>
           )}
         </>
       )}
@@ -173,15 +207,27 @@ const ViewInventory = () => {
   );
 };
 
-// ... (EquipmentDetailsModal remains unchanged)
+// 🟢 ENHANCED Details Modal
 const EquipmentDetailsModal = ({ pool, onClose }) => {
-  // Helper style for grid items
   const gridStyle = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' };
   const itemStyle = { fontSize: '14px', color: 'var(--text-secondary)' };
   const labelStyle = { display: 'block', fontSize: '12px', fontWeight: '600', color: 'var(--text-light)', textTransform: 'uppercase', marginBottom: '4px' };
   const valueStyle = { color: 'var(--text-primary)', fontWeight: '500' };
   const sectionStyle = { backgroundColor: 'var(--bg-table-header)', padding: '16px', borderRadius: '8px', marginBottom: '20px' };
-  const h4Style = { marginTop: 0, marginBottom: '12px', fontSize: '15px', fontWeight: '600', color: 'var(--text-primary)', borderBottom: '1px solid var(--border-color)', paddingBottom: '8px' };
+  
+  // Header style with icon
+  const h4Style = { 
+    display: 'flex', 
+    alignItems: 'center', 
+    gap: '8px',
+    marginTop: 0, 
+    marginBottom: '12px', 
+    fontSize: '15px', 
+    fontWeight: '600', 
+    color: 'var(--text-primary)', 
+    borderBottom: '1px solid var(--border-color)', 
+    paddingBottom: '8px' 
+  };
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -193,9 +239,8 @@ const EquipmentDetailsModal = ({ pool, onClose }) => {
 
         <div className="modal-body">
           
-          {/* General Info Section */}
           <div style={sectionStyle}>
-            <h4 style={h4Style}>Information</h4>
+            <h4 style={h4Style}><Package size={16} /> Information</h4>
             <div style={gridStyle}>
               <div style={itemStyle}><span style={labelStyle}>Model</span><span style={valueStyle}>{pool.model}</span></div>
               <div style={itemStyle}><span style={labelStyle}>Category</span><span style={valueStyle}>{pool.category}</span></div>
@@ -204,9 +249,8 @@ const EquipmentDetailsModal = ({ pool, onClose }) => {
             </div>
           </div>
 
-          {/* Statistics Section */}
           <div style={sectionStyle}>
-            <h4 style={h4Style}>Inventory Status</h4>
+            <h4 style={h4Style}><BarChart2 size={16} /> Inventory Status</h4>
             <div style={gridStyle}>
               <div style={itemStyle}><span style={labelStyle}>Total Quantity</span><span style={valueStyle}>{pool.totalQuantity}</span></div>
               <div style={itemStyle}><span style={labelStyle}>Available</span>
@@ -223,19 +267,26 @@ const EquipmentDetailsModal = ({ pool, onClose }) => {
             </div>
           </div>
 
-          {/* Authorization & Meta */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
             <div style={sectionStyle}>
-                <h4 style={h4Style}>Authorized For</h4>
+                <h4 style={h4Style}><Users size={16} /> Authorized For</h4>
                 <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '14px', color: 'var(--text-primary)' }}>
                     {pool.authorizedDesignations.map(d => <li key={d}>{d}</li>)}
                 </ul>
             </div>
             <div style={sectionStyle}>
-                <h4 style={h4Style}>Metadata</h4>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <div style={itemStyle}><span style={labelStyle}>Cost</span><span style={valueStyle}>{pool.totalCost ? `$${pool.totalCost}` : 'N/A'}</span></div>
-                    <div style={itemStyle}><span style={labelStyle}>Supplier</span><span style={valueStyle}>{pool.supplier || 'N/A'}</span></div>
+                <h4 style={h4Style}><FileText size={16} /> Metadata</h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <div style={itemStyle}>
+                      <span style={labelStyle}><DollarSign size={12} style={{verticalAlign: 'middle', marginRight: '4px'}}/> Cost</span>
+                      <span style={valueStyle}>
+                        {pool.totalCost ? `₹${pool.totalCost.toLocaleString('en-IN')}` : 'N/A'}
+                      </span>
+                    </div>
+                    <div style={itemStyle}>
+                      <span style={labelStyle}><Truck size={12} style={{verticalAlign: 'middle', marginRight: '4px'}}/> Supplier</span>
+                      <span style={valueStyle}>{pool.supplier || 'N/A'}</span>
+                    </div>
                 </div>
             </div>
           </div>
