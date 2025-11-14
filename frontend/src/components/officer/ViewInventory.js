@@ -1,0 +1,310 @@
+import React, { useState, useEffect } from 'react';
+import { officerAPI } from '../../utils/api';
+import { toast } from 'react-toastify';
+import { motion } from 'framer-motion';
+import { 
+  Package, 
+  BarChart2, 
+  Users, 
+  FileText,
+  DollarSign,
+  Truck,
+  Eye // 🟢 Icon for button
+} from 'lucide-react';
+
+const ViewInventory = () => {
+  const [equipment, setEquipment] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [categoryFilter, setCategoryFilter] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [categories, setCategories] = useState([]);
+  const [selectedPool, setSelectedPool] = useState(null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+
+  useEffect(() => {
+    fetchEquipment();
+  }, [currentPage, categoryFilter, searchTerm]);
+
+  const fetchEquipment = async () => {
+    try {
+      setLoading(true);
+      const response = await officerAPI.getInventory({
+        page: currentPage,
+        limit: 15,
+        category: categoryFilter,
+        search: searchTerm
+      });
+
+      if (response.data.success) {
+        setEquipment(response.data.data.equipment);
+        setCategories(response.data.data.categories || []);
+        setTotalPages(response.data.data.pagination.pages);
+      }
+    } catch (error) {
+      toast.error('Failed to fetch equipment pools');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleViewDetails = async (poolId) => {
+    try {
+      const response = await officerAPI.getEquipmentDetails(poolId);
+      if (response.data.success) {
+        setSelectedPool(response.data.data.equipment);
+        setShowDetailsModal(true);
+      }
+    } catch (error) {
+      toast.error('Failed to fetch equipment pool details');
+    }
+  };
+
+  // Animation Variants
+  const containerVariants = {
+    hidden: { opacity: 0, y: 15 },
+    visible: { opacity: 1, y: 0, transition: { staggerChildren: 0.05 } }
+  };
+  const itemVariants = {
+    hidden: { opacity: 0 },
+    visible: { opacity: 1 }
+  };
+
+  if (loading) {
+    return (
+      <div className="loading-state">
+        <div className="spinner"></div>
+        <p>Loading authorized equipment pools...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="view-inventory">
+      <motion.div 
+        className="search-filters" 
+        style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '24px', marginBottom: '24px' }}
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
+        <input
+          type="text"
+          placeholder="Search equipment pools..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="filter-search"
+        />
+        <select
+          value={categoryFilter}
+          onChange={(e) => setCategoryFilter(e.target.value)}
+          className="filter-select"
+        >
+          <option value="">All Categories</option>
+          {categories.map(category => (
+            <option key={category} value={category}>{category}</option>
+          ))}
+        </select>
+      </motion.div>
+
+      {equipment.length === 0 ? (
+        <div className="no-data">
+          <h3>No Results</h3>
+          <p>No equipment pools found matching your criteria.</p>
+        </div>
+      ) : (
+        <>
+          <motion.div 
+            className="inventory-table"
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+          >
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Pool Name</th>
+                  <th>Category</th>
+                  <th>Model</th>
+                  <th>Total</th>
+                  <th>Available</th>
+                  <th>Issued</th>
+                  <th>Location</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {equipment.map((pool) => (
+                  <motion.tr key={pool._id} variants={itemVariants}>
+                    <td>
+                      <strong>{pool.poolName}</strong>
+                      <div style={{ fontSize: '12px', color: 'var(--text-light)' }}>{pool.manufacturer}</div>
+                    </td>
+                    <td>{pool.category}</td>
+                    <td>{pool.model}</td>
+                    <td>{pool.totalQuantity}</td>
+                    <td>
+                      <span className={`badge badge-${
+                        pool.availableCount > 10 ? 'success' :
+                        pool.availableCount > 5 ? 'warning' : 'danger'
+                      }`}>
+                        {pool.availableCount}
+                      </span>
+                    </td>
+                    <td>{pool.issuedCount}</td>
+                    <td>{pool.location}</td>
+                    <td>
+                      {/* 🟢 Enhanced Button */}
+                      <button
+                        onClick={() => handleViewDetails(pool._id)}
+                        className="btn btn-secondary btn-sm"
+                      >
+                        <Eye size={14} /> Details
+                      </button>
+                    </td>
+                  </motion.tr>
+                ))}
+              </tbody>
+            </table>
+          </motion.div>
+
+          {totalPages > 1 && (
+            <motion.div 
+              className="pagination"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+            >
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+                className="btn btn-secondary"
+              >
+                Previous
+              </button>
+              <span>Page {currentPage} of {totalPages}</span>
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+                className="btn btn-secondary"
+              >
+                Next
+              </button>
+            </motion.div>
+          )}
+        </>
+      )}
+
+      {showDetailsModal && selectedPool && (
+        <EquipmentDetailsModal
+          pool={selectedPool}
+          onClose={() => {
+            setShowDetailsModal(false);
+            setSelectedPool(null);
+          }}
+        />
+      )}
+    </div>
+  );
+};
+
+// 🟢 ENHANCED Details Modal
+const EquipmentDetailsModal = ({ pool, onClose }) => {
+  const gridStyle = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' };
+  const itemStyle = { fontSize: '14px', color: 'var(--text-secondary)' };
+  const labelStyle = { display: 'block', fontSize: '12px', fontWeight: '600', color: 'var(--text-light)', textTransform: 'uppercase', marginBottom: '4px' };
+  const valueStyle = { color: 'var(--text-primary)', fontWeight: '500' };
+  const sectionStyle = { backgroundColor: 'var(--bg-table-header)', padding: '16px', borderRadius: '8px', marginBottom: '20px' };
+  
+  // Header style with icon
+  const h4Style = { 
+    display: 'flex', 
+    alignItems: 'center', 
+    gap: '8px',
+    marginTop: 0, 
+    marginBottom: '12px', 
+    fontSize: '15px', 
+    fontWeight: '600', 
+    color: 'var(--text-primary)', 
+    borderBottom: '1px solid var(--border-color)', 
+    paddingBottom: '8px' 
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content modal-lg" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3>Pool Details: {pool.poolName}</h3>
+          <button onClick={onClose} className="close-btn">&times;</button>
+        </div>
+
+        <div className="modal-body">
+          
+          <div style={sectionStyle}>
+            <h4 style={h4Style}><Package size={16} /> Information</h4>
+            <div style={gridStyle}>
+              <div style={itemStyle}><span style={labelStyle}>Model</span><span style={valueStyle}>{pool.model}</span></div>
+              <div style={itemStyle}><span style={labelStyle}>Category</span><span style={valueStyle}>{pool.category}</span></div>
+              <div style={itemStyle}><span style={labelStyle}>Manufacturer</span><span style={valueStyle}>{pool.manufacturer}</span></div>
+              <div style={itemStyle}><span style={labelStyle}>Location</span><span style={valueStyle}>{pool.location}</span></div>
+            </div>
+          </div>
+
+          <div style={sectionStyle}>
+            <h4 style={h4Style}><BarChart2 size={16} /> Inventory Status</h4>
+            <div style={gridStyle}>
+              <div style={itemStyle}><span style={labelStyle}>Total Quantity</span><span style={valueStyle}>{pool.totalQuantity}</span></div>
+              <div style={itemStyle}><span style={labelStyle}>Available</span>
+                <span className={`badge badge-${
+                    pool.availableCount > 10 ? 'success' :
+                    pool.availableCount > 5 ? 'warning' : 'danger'
+                }`} style={{ verticalAlign: 'middle', marginLeft: '4px' }}>
+                    {pool.availableCount}
+                </span>
+              </div>
+              <div style={itemStyle}><span style={labelStyle}>Issued</span><span style={valueStyle}>{pool.issuedCount}</span></div>
+              <div style={itemStyle}><span style={labelStyle}>Maintenance</span><span style={{...valueStyle, color: 'var(--color-warning-text)'}}>{pool.maintenanceCount}</span></div>
+              <div style={itemStyle}><span style={labelStyle}>Damaged/Lost</span><span style={{...valueStyle, color: 'var(--color-danger-text)'}}>{pool.damagedCount}</span></div>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+            <div style={sectionStyle}>
+                <h4 style={h4Style}><Users size={16} /> Authorized For</h4>
+                <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '14px', color: 'var(--text-primary)' }}>
+                    {pool.authorizedDesignations.map(d => <li key={d}>{d}</li>)}
+                </ul>
+            </div>
+            <div style={sectionStyle}>
+                <h4 style={h4Style}><FileText size={16} /> Metadata</h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <div style={itemStyle}>
+                      <span style={labelStyle}><DollarSign size={12} style={{verticalAlign: 'middle', marginRight: '4px'}}/> Cost</span>
+                      <span style={valueStyle}>
+                        {pool.totalCost ? `₹${pool.totalCost.toLocaleString('en-IN')}` : 'N/A'}
+                      </span>
+                    </div>
+                    <div style={itemStyle}>
+                      <span style={labelStyle}><Truck size={12} style={{verticalAlign: 'middle', marginRight: '4px'}}/> Supplier</span>
+                      <span style={valueStyle}>{pool.supplier || 'N/A'}</span>
+                    </div>
+                </div>
+            </div>
+          </div>
+
+          {pool.notes && (
+            <div style={sectionStyle}>
+              <h4 style={h4Style}>Notes</h4>
+              <p style={{ margin: 0, fontSize: '14px', color: 'var(--text-secondary)' }}>{pool.notes}</p>
+            </div>
+          )}
+        </div>
+        
+        <div className="modal-actions">
+            <button onClick={onClose} className="btn btn-secondary">Close</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default ViewInventory;
