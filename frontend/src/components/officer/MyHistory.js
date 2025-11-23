@@ -6,37 +6,80 @@ import {
   ResponsiveContainer, Cell, PieChart, Pie, Legend 
 } from 'recharts';
 import { 
-  LayoutDashboard, 
-  Clock, 
-  Shield, 
-  AlertTriangle, 
-  CheckCircle, 
-  FileText,
-  ArrowRight,
-  ChevronDown
+  LayoutDashboard, Clock, Shield, AlertTriangle, CheckCircle, 
+  FileText, ChevronDown 
 } from 'lucide-react';
 
 // --- High Contrast / Visible Theme ---
 const THEME = {
-  textMain: '#0f172a',    // Slate 900
-  textSub: '#475569',     // Slate 600
-  accent: '#2563eb',      // Blue 600
-  success: '#16a34a',     // Green 600
-  warning: '#d97706',     // Amber 600
-  danger: '#dc2626',      // Red 600
-  purple: '#7c3aed',      // Violet 600
+  textMain: '#0f172a',    
+  textSub: '#475569',     
+  accent: '#2563eb',      
+  success: '#16a34a',     
+  warning: '#d97706',     
+  danger: '#dc2626',      
+  purple: '#7c3aed',      
   bg: {
-    main: '#f8fafc',      // Slate 50
+    main: '#f8fafc',      
     card: '#ffffff',
-    border: '#cbd5e1',    // Slate 300
+    border: '#cbd5e1',    
     hover: '#f1f5f9'
   }
+};
+
+// --- SHARED CUSTOM TOOLTIP COMPONENT ---
+const CustomTooltip = ({ active, payload }) => {
+  if (active && payload && payload.length) {
+    const data = payload[0].payload;
+    // Limit displayed IDs to avoid a huge list
+    const maxIdsToShow = 5;
+    const ids = data.ids || [];
+    const displayIds = ids.slice(0, maxIdsToShow);
+    const remaining = ids.length - maxIdsToShow;
+
+    return (
+      <div style={{
+        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+        border: `1px solid ${THEME.bg.border}`,
+        borderRadius: '8px',
+        padding: '12px',
+        boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+        minWidth: '200px',
+        zIndex: 1000
+      }}>
+        <p style={{ fontWeight: '700', color: THEME.textMain, marginBottom: '4px' }}>
+          {data.name}
+        </p>
+        <p style={{ color: THEME.accent, fontWeight: '600', marginBottom: '8px' }}>
+          Count: {data.value}
+        </p>
+        
+        {ids.length > 0 && (
+          <div style={{ borderTop: `1px solid ${THEME.bg.border}`, paddingTop: '8px' }}>
+            <p style={{ fontSize: '12px', color: THEME.textSub, fontWeight: '700', marginBottom: '4px' }}>
+              Associated IDs:
+            </p>
+            <ul style={{ margin: 0, paddingLeft: '16px', fontSize: '12px', color: THEME.textSub }}>
+              {displayIds.map((id, idx) => (
+                <li key={idx}>{id}</li>
+              ))}
+            </ul>
+            {remaining > 0 && (
+              <p style={{ fontSize: '11px', color: THEME.textSub, marginTop: '4px', fontStyle: 'italic' }}>
+                ...and {remaining} more
+              </p>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  }
+  return null;
 };
 
 const MyHistory = () => {
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
-  // 1. State to control how many items are visible
   const [visibleCount, setVisibleCount] = useState(5);
 
   useEffect(() => {
@@ -58,45 +101,80 @@ const MyHistory = () => {
     }
   };
 
-  // 2. Handler to load more items
   const handleLoadMore = () => {
     setVisibleCount(prev => prev + 5);
   };
 
-  // --- Analytics Engine ---
+  // --- ANALYTICS ENGINE (Updated for both Charts) ---
   const { statusData, weaponUsageData } = useMemo(() => {
-    let counts = { requested: history.length, issued: 0, returned: 0, maintenance: 0, lost: 0 };
+    // 1. Setup buckets for Status Chart
+    const statusBuckets = {
+      'Total': { count: 0, ids: new Set(), color: THEME.textMain },
+      'Active': { count: 0, ids: new Set(), color: THEME.warning },
+      'Returned': { count: 0, ids: new Set(), color: THEME.success },
+      'Maint.': { count: 0, ids: new Set(), color: THEME.purple },
+      'Lost': { count: 0, ids: new Set(), color: THEME.danger },
+    };
+
+    // 2. Setup map for Weapon Usage Chart
     const usageMap = {};
 
     history.forEach(entry => {
+      const uniqueId = entry.itemUniqueId;
+      const name = entry.equipmentPoolName || 'Unknown Equipment';
+
+      // --- Logic for Status Chart ---
+      // Add to Total
+      statusBuckets['Total'].count += 1;
+      if (uniqueId) statusBuckets['Total'].ids.add(uniqueId);
+
       const isReturned = entry.status === 'Completed' || !!entry.returnedDate;
       const remarks = (entry.remarks || '').toLowerCase();
       const condition = (entry.conditionAtReturn || '').toLowerCase();
 
       if (!isReturned) {
-        counts.issued += 1;
+        // Active
+        statusBuckets['Active'].count += 1;
+        if (uniqueId) statusBuckets['Active'].ids.add(uniqueId);
       } else if (condition.includes('lost') || remarks.includes('lost') || remarks.includes('fir')) {
-        counts.lost += 1;
+        // Lost
+        statusBuckets['Lost'].count += 1;
+        if (uniqueId) statusBuckets['Lost'].ids.add(uniqueId);
       } else if (condition.includes('poor') || condition.includes('damage') || remarks.includes('maintenance')) {
-        counts.maintenance += 1;
+        // Maintenance
+        statusBuckets['Maint.'].count += 1;
+        if (uniqueId) statusBuckets['Maint.'].ids.add(uniqueId);
       } else {
-        counts.returned += 1;
+        // Returned (Good/Regular)
+        statusBuckets['Returned'].count += 1;
+        if (uniqueId) statusBuckets['Returned'].ids.add(uniqueId);
       }
 
-      const name = entry.equipmentPoolName || 'Unknown Equipment';
-      usageMap[name] = (usageMap[name] || 0) + 1;
+      // --- Logic for Weapon Usage Chart ---
+      if (!usageMap[name]) {
+        usageMap[name] = { count: 0, ids: new Set() };
+      }
+      usageMap[name].count += 1;
+      if (uniqueId) {
+        usageMap[name].ids.add(uniqueId);
+      }
     });
 
-    const sData = [
-      { name: 'Total', value: counts.requested, color: THEME.textMain },
-      { name: 'Active', value: counts.issued, color: THEME.warning },
-      { name: 'Returned', value: counts.returned, color: THEME.success },
-      { name: 'Maint.', value: counts.maintenance, color: THEME.purple },
-      { name: 'Lost', value: counts.lost, color: THEME.danger },
-    ];
+    // Transform Status Buckets to Array
+    const sData = Object.keys(statusBuckets).map(key => ({
+      name: key,
+      value: statusBuckets[key].count,
+      color: statusBuckets[key].color,
+      ids: Array.from(statusBuckets[key].ids) // Convert Set to Array
+    }));
 
+    // Transform Usage Map to Array
     const wData = Object.keys(usageMap)
-      .map(key => ({ name: key, value: usageMap[key] }))
+      .map(key => ({ 
+        name: key, 
+        value: usageMap[key].count,
+        ids: Array.from(usageMap[key].ids) 
+      }))
       .sort((a, b) => b.value - a.value)
       .slice(0, 5)
       .map((item, index) => ({
@@ -117,7 +195,6 @@ const MyHistory = () => {
     };
   };
 
-  // --- Styles ---
   const styles = {
     container: {
       padding: '24px',
@@ -149,7 +226,7 @@ const MyHistory = () => {
       overflowX: 'auto',
       borderRadius: '12px',
       border: `1px solid ${THEME.bg.border}`,
-      marginBottom: '16px' // Space for button
+      marginBottom: '16px' 
     },
     table: {
       width: '100%',
@@ -179,7 +256,7 @@ const MyHistory = () => {
       display: 'flex',
       alignItems: 'center',
       gap: '8px',
-      margin: '0 auto', // Center it
+      margin: '0 auto', 
       padding: '12px 24px',
       backgroundColor: 'white',
       border: `1px solid ${THEME.bg.border}`,
@@ -206,8 +283,8 @@ const MyHistory = () => {
         </p>
       </div>
 
-      {/* Charts */}
       <div style={styles.chartsGrid}>
+        {/* Bar Chart (Status) - NOW WITH ID TOOLTIP */}
         <div style={styles.card}>
           <div style={styles.cardHeader}>Status Overview</div>
           <div style={{ width: '100%', height: 320 }}>
@@ -216,7 +293,13 @@ const MyHistory = () => {
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#cbd5e1" />
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: THEME.textSub, fontSize: 13, fontWeight: 500 }} dy={10} />
                 <YAxis axisLine={false} tickLine={false} tick={{ fill: THEME.textSub, fontSize: 13 }} />
-                <RechartsTooltip cursor={{ fill: '#f1f5f9' }} contentStyle={{ borderRadius: '8px', border: '1px solid #cbd5e1' }} />
+                
+                {/* Applied CustomTooltip Here */}
+                <RechartsTooltip 
+                    cursor={{ fill: '#f1f5f9' }} 
+                    content={<CustomTooltip />}
+                />
+                
                 <Bar dataKey="value" radius={[6, 6, 0, 0]} barSize={50}>
                   {statusData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
@@ -227,6 +310,7 @@ const MyHistory = () => {
           </div>
         </div>
 
+        {/* Pie Chart (Weapon Usage) - ALREADY HAD ID TOOLTIP */}
         <div style={styles.card}>
           <div style={styles.cardHeader}>Most Used Equipment</div>
           <div style={{ width: '100%', height: 320 }}>
@@ -248,7 +332,8 @@ const MyHistory = () => {
                       <Cell key={`cell-${index}`} fill={entry.color} strokeWidth={0} />
                     ))}
                   </Pie>
-                  <RechartsTooltip contentStyle={{ borderRadius: '8px', border: 'none' }} />
+                  {/* CustomTooltip Applied Here */}
+                  <RechartsTooltip content={<CustomTooltip />} />
                   <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '14px' }} />
                 </PieChart>
               </ResponsiveContainer>
@@ -283,7 +368,6 @@ const MyHistory = () => {
                 </tr>
               </thead>
               <tbody>
-                {/* 3. Slice the history based on visibleCount */}
                 {history.slice(0, visibleCount).map((item) => {
                   const issueDT = formatDateTime(item.issuedDate);
                   const returnDT = formatDateTime(item.returnedDate);
@@ -294,8 +378,6 @@ const MyHistory = () => {
 
                   return (
                     <tr key={item._id} style={{ backgroundColor: 'white', borderBottom: `1px solid ${THEME.bg.border}` }}>
-                      
-                      {/* Equipment Detail */}
                       <td style={styles.td}>
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
                             <div style={{ fontWeight: '700', color: THEME.textMain, fontSize: '16px', lineHeight: '1.4' }}>
@@ -307,8 +389,6 @@ const MyHistory = () => {
                             </div>
                         </div>
                       </td>
-
-                      {/* Date & Time */}
                       <td style={styles.td}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', alignItems: 'flex-start' }}>
                             <div>
@@ -342,13 +422,9 @@ const MyHistory = () => {
                             )}
                         </div>
                       </td>
-
-                      {/* Status */}
                       <td style={styles.td}>
                          <StatusBadge status={item.status} isLost={isLost} isMaint={isMaint} />
                       </td>
-
-                      {/* Transaction Context */}
                       <td style={styles.td}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'flex-start', width: '100%' }}>
                             <div style={{ width: '100%' }}>
@@ -359,7 +435,6 @@ const MyHistory = () => {
                                     {item.purpose || "No reason provided."}
                                 </div>
                             </div>
-
                             {isReturned && (
                                 <div style={{ 
                                     width: '100%',
@@ -378,7 +453,6 @@ const MyHistory = () => {
                             )}
                         </div>
                       </td>
-
                     </tr>
                   );
                 })}
@@ -386,7 +460,6 @@ const MyHistory = () => {
             </table>
         </div>
         
-        {/* 4. Load More Button */}
         {visibleCount < history.length && (
             <button 
                 onClick={handleLoadMore} 
@@ -400,7 +473,6 @@ const MyHistory = () => {
   );
 };
 
-// --- Sub-Component: Badge ---
 const StatusBadge = ({ status, isLost, isMaint }) => {
   let bg = '#e2e8f0';
   let color = '#475569';
