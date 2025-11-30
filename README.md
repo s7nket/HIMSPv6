@@ -14,9 +14,9 @@
     <a href="https://himsp.onrender.com/"><strong>View Live Demo »</strong></a>
     <br />
     <br />
-    <a href="https://github.com/your-username/police-inventory-system/issues">Report Bug</a>
+    <a href="https://github.com/s7nket/police-inventory-system/issues">Report Bug</a>
     ·
-    <a href="https://github.com/your-username/police-inventory-system/pulls">Request Feature</a>
+    <a href="https://github.com/s7nket/police-inventory-system/pulls">Request Feature</a>
   </p>
 </div>
 
