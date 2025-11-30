@@ -2,7 +2,7 @@
 
 <br />
 <div align="center">
-  <img src="https://cdn-icons-png.flaticon.com/512/3222/3222638.png" alt="Logo" width="90" height="90">
+  <img src="https://cdn-icons-png.flaticon.com/512/5523/5523062.png" alt="Armory Logo" width="100" height="100">
 
   <h1 align="center">HIMSP</h1>
   <p align="center">
