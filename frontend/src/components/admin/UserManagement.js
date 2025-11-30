@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { adminAPI } from '../../utils/api';
 import { toast } from 'react-toastify';
+import { Edit } from 'lucide-react';
 
-// ======== 🟢 1. NEW UNIFIED RANK DATA 🟢 ========
+// ======== RANK DATA ========
 const RANKS_DATA = [
   // Senior Command
   { code: 'DGP', designation: 'Director General of Police (DGP)', category: 'Senior Command (DGP, SP, DCP)' },
@@ -33,7 +34,6 @@ const RANKS_DATA = [
   { code: 'IPS', designation: 'Indian Police Service (IPS)', category: 'Other' }
 ];
 
-// Helper to group ranks for the <optgroup> dropdown
 const GROUPED_RANKS = RANKS_DATA.reduce((acc, rank) => {
   const category = rank.category || 'Other';
   if (!acc[category]) {
@@ -42,9 +42,7 @@ const GROUPED_RANKS = RANKS_DATA.reduce((acc, rank) => {
   acc[category].push(rank);
   return acc;
 }, {});
-// ================================================
 
-// (State codes are unchanged)
 const STATE_CODES = [
   { code: 'IND', name: 'All-India' }, { code: 'AP', name: 'Andhra Pradesh' },
   { code: 'AR', name: 'Arunachal Pradesh' }, { code: 'AS', name: 'Assam' },
@@ -67,7 +65,6 @@ const STATE_CODES = [
   { code: 'LD', name: 'Lakshadweep' }, { code: 'PY', name: 'Puducherry' }
 ];
 
-// ======== 🟢 2. "TIME AGO" FUNCTION 🟢 ========
 const calculateServiceDuration = (dateOfJoining) => {
   if (!dateOfJoining) return 'N/A';
   const joiningDate = new Date(dateOfJoining);
@@ -95,7 +92,6 @@ const calculateServiceDuration = (dateOfJoining) => {
   const years = (days / 365.25).toFixed(1);
   return `${parseFloat(years)} yrs`;
 };
-// =================================================
 
 const UserManagement = () => {
   const [users, setUsers] = useState([]);
@@ -110,6 +106,7 @@ const UserManagement = () => {
   const [debouncedRoleFilter, setDebouncedRoleFilter] = useState('');
   
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false); // ADDED
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   
@@ -117,7 +114,7 @@ const UserManagement = () => {
 
   const [officerIdParts, setOfficerIdParts] = useState({
     state: '',
-    rankCode: '', // Auto-filled
+    rankCode: '',
     year: new Date().getFullYear().toString(),
     serial: ''
   });
@@ -125,11 +122,11 @@ const UserManagement = () => {
   const [newUser, setNewUser] = useState({
     officerId: '',
     fullName: '',
-    designation: '', // Master rank field
+    designation: '',
     email: '',
     dateOfJoining: '',
     password: '',
-    rank: '' // Auto-filled category
+    rank: ''
   });
 
   // Validation functions
@@ -148,7 +145,6 @@ const UserManagement = () => {
     const newErrors = {};
     if (!officerIdParts.state) newErrors.state = 'State is required';
     if (!newUser.designation) newErrors.designation = 'Designation is required';
-    
     if (!officerIdParts.year) newErrors.year = 'Year is required';
     else {
       const year = parseInt(officerIdParts.year);
@@ -195,20 +191,15 @@ const UserManagement = () => {
     }
   }, [officerIdParts]);
 
-  // Debouncing hook
   useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedSearchTerm(searchTerm);
       setDebouncedRoleFilter(roleFilter);
       setCurrentPage(1);
     }, 500);
-
-    return () => {
-      clearTimeout(handler);
-    };
+    return () => clearTimeout(handler);
   }, [searchTerm, roleFilter]);
 
-  // Fetch hook
   useEffect(() => {
     fetchUsers();
   }, [currentPage, debouncedSearchTerm, debouncedRoleFilter]); 
@@ -243,7 +234,6 @@ const UserManagement = () => {
     }
   };
 
-  // Robust Error Handler
   const handleCreateUser = async (e) => {
     e.preventDefault();
     const formErrors = validateForm();
@@ -256,7 +246,6 @@ const UserManagement = () => {
       await adminAPI.createUser(newUser);
       toast.success('Officer created successfully!');
       setShowCreateModal(false);
-      // Reset form
       setNewUser({ officerId: '', fullName: '', designation: '', email: '', dateOfJoining: '', password: '', rank: '' });
       setOfficerIdParts({ state: '', rankCode: '', year: new Date().getFullYear().toString(), serial: '' });
       setErrors({});
@@ -293,8 +282,28 @@ const UserManagement = () => {
     setShowDeleteModal(true);
   };
 
+  // ADDED: Edit Click Handler
+  const handleEditClick = (user) => {
+    setSelectedUser(user);
+    setShowEditModal(true);
+  };
+
+  // ADDED: Update User Handler
+  const handleUpdateUser = async (updatedData) => {
+    try {
+      await adminAPI.updateUser(selectedUser._id, updatedData);
+      toast.success('User details updated successfully');
+      setShowEditModal(false);
+      setSelectedUser(null);
+      fetchUsers();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to update user');
+    }
+  };
+
   const handleCloseModals = () => {
     setShowCreateModal(false);
+    setShowEditModal(false); // ADDED
     setShowDeleteModal(false);
     setSelectedUser(null);
     setErrors({});
@@ -313,7 +322,6 @@ const UserManagement = () => {
     }
   };
 
-  // New Smart Rank Handler
   const handleDesignationChange = (e) => {
     const selectedDesignation = e.target.value;
     const rankData = RANKS_DATA.find(r => r.designation === selectedDesignation);
@@ -368,7 +376,6 @@ const UserManagement = () => {
           </button>
         </div>
 
-        {/* Filters Section */}
         <div className="um-controls">
           <input
             type="text"
@@ -388,7 +395,6 @@ const UserManagement = () => {
           </select>
         </div>
 
-        {/* Users Table */}
         <div className={`um-table-wrapper ${loading ? 'um-loading' : ''}`}>
           {users.length === 0 && !loading ? (
             <div className="um-empty-state">
@@ -396,14 +402,12 @@ const UserManagement = () => {
             </div>
           ) : (
             <table className="um-table">
-              {/* ======== 🟢 3. UPDATED TABLE HEADER 🟢 ======== */}
               <thead>
                 <tr>
                   <th>Officer ID</th>
                   <th>Full Name</th>
                   <th>Email</th>
                   <th>Designation</th>
-                  {/* <th>Rank</th> <-- REMOVED */}
                   <th>Service</th>
                   <th>Status</th>
                   <th>Actions</th>
@@ -418,7 +422,6 @@ const UserManagement = () => {
                     <td>
                       <span className="um-badge um-badge-blue">{user.designation}</span>
                     </td>
-                    {/* <td>{user.rank}</td> <-- REMOVED */}
                     <td>{calculateServiceDuration(user.dateOfJoining)}</td>
                     <td>
                       <span className={`um-badge ${user.isActive ? 'um-badge-green' : 'um-badge-gray'}`}>
@@ -426,6 +429,16 @@ const UserManagement = () => {
                       </span>
                     </td>
                     <td className="um-actions-cell">
+                      {/* Edit Button */}
+                      <button
+                        className="btn btn-action btn-action-secondary"
+                        onClick={() => handleEditClick(user)}
+                        title="Edit User"
+                        style={{ marginRight: '8px' }}
+                      >
+                         <Edit size={16} /> Edit
+                      </button>
+
                       <button
                         className={`btn btn-action ${user.isActive ? 'btn-action-warn' : 'btn-action-success'}`}
                         onClick={() => handleToggleStatus(user._id, user.isActive)}
@@ -446,7 +459,6 @@ const UserManagement = () => {
           )}
         </div>
 
-        {/* Pagination */}
         {totalPages > 1 && (
           <div className="um-pagination">
             <button
@@ -480,7 +492,6 @@ const UserManagement = () => {
             </div>
             
             <form id="create-user-form" onSubmit={handleCreateUser} className="um-modal-form">
-              {/* --- Officer ID Builder --- */}
               <div className="um-form-section">
                 <h4>Officer ID Builder</h4>
                 <div className="um-form-row" style={{gap: '8px'}}>
@@ -538,7 +549,6 @@ const UserManagement = () => {
                 </div>
               </div>
 
-              {/* --- Officer Details --- */}
               <div className="um-form-row">
                 <div className="um-form-group">
                   <label>Full Name *</label>
@@ -553,11 +563,9 @@ const UserManagement = () => {
                 </div>
               </div>
 
-              {/* --- Rank & Designation (Refactored) --- */}
               <div className="um-form-row">
                 <div className="um-form-group">
                   <label>Designation *</label>
-                  {/* This is now the master dropdown */}
                   <select
                     value={newUser.designation}
                     onChange={handleDesignationChange}
@@ -578,7 +586,6 @@ const UserManagement = () => {
                 </div>
                 <div className="um-form-group">
                   <label>Rank Category</label>
-                  {/* This is now a disabled field, auto-filled */}
                   <input
                     type="text"
                     value={newUser.rank}
@@ -589,7 +596,6 @@ const UserManagement = () => {
                 </div>
               </div>
 
-              {/* --- Joining Date & Password --- */}
               <div className="um-form-row">
                 <div className="um-form-group">
                   <label>Date of Joining *</label>
@@ -611,7 +617,16 @@ const UserManagement = () => {
         </div>
       )}
 
-      {/* Delete Confirmation Modal (Unchanged) */}
+      {/* ADDED: Edit User Modal */}
+      {showEditModal && selectedUser && (
+        <EditUserModal 
+          user={selectedUser} 
+          onClose={() => { setShowEditModal(false); setSelectedUser(null); }} 
+          onUpdate={handleUpdateUser}
+        />
+      )}
+
+      {/* Delete Confirmation Modal */}
       {showDeleteModal && selectedUser && (
         <div className="um-modal-overlay" onClick={handleCloseModals}>
           <div className="um-modal-content um-modal-content-small" onClick={(e) => e.stopPropagation()}>
@@ -641,22 +656,77 @@ const UserManagement = () => {
   );
 };
 
-// (This wrapper is not actively used but kept from your file)
-const CreateUserFormWrapper = ({ show, handleCloseModals, handleCreateUser, ...props }) => (
-  <div className={`um-modal-overlay ${!show ? 'hidden' : ''}`} onClick={handleCloseModals}>
-    <div className="um-modal-content" onClick={(e) => e.stopPropagation()}>
-      <div className="um-modal-header">
-        <h3>Create New Officer</h3>
-        <button className="um-modal-close" onClick={handleCloseModals}>×</button>
-      </div>
-      <form id="create-user-form" onSubmit={handleCreateUser} className="um-modal-form">
-      </form>
-      <div className="um-modal-actions">
-        <button type="button" className="btn btn-secondary" onClick={handleCloseModals}>Cancel</button>
-        <button type="submit" className="btn btn-primary" form="create-user-form">Create Officer</button>
+// ADDED: Edit User Modal Component
+const EditUserModal = ({ user, onClose, onUpdate }) => {
+  const [formData, setFormData] = useState({
+    fullName: user.fullName || '',
+    designation: user.designation || '',
+    rank: user.rank || '',
+    isActive: user.isActive
+  });
+
+  const handleDesignationChange = (e) => {
+    const newDest = e.target.value;
+    const rankData = RANKS_DATA.find(r => r.designation === newDest);
+    setFormData(prev => ({
+      ...prev,
+      designation: newDest,
+      rank: rankData ? rankData.category : prev.rank
+    }));
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onUpdate(formData);
+  };
+
+  return (
+    <div className="um-modal-overlay" onClick={onClose}>
+      <div className="um-modal-content" onClick={e => e.stopPropagation()}>
+        <div className="um-modal-header">
+          <h3>Edit Officer Details</h3>
+          <button className="um-modal-close" onClick={onClose}>×</button>
+        </div>
+        <form onSubmit={handleSubmit} className="um-modal-form">
+          <div className="um-form-group">
+            <label>Officer ID (Read Only)</label>
+            <input type="text" value={user.officerId} disabled className="um-input-disabled" style={{backgroundColor: '#e5e7eb'}} />
+          </div>
+          <div className="um-form-group">
+            <label>Full Name</label>
+            <input 
+              type="text" 
+              value={formData.fullName} 
+              onChange={e => setFormData({...formData, fullName: e.target.value})} 
+              required
+            />
+          </div>
+          <div className="um-form-group">
+            <label>Designation</label>
+            <select value={formData.designation} onChange={handleDesignationChange} required>
+               {Object.entries(GROUPED_RANKS).map(([category, ranks]) => (
+                  <optgroup label={category} key={category}>
+                    {ranks.map(rank => (
+                      <option key={rank.designation} value={rank.designation}>
+                        {rank.designation}
+                      </option>
+                    ))}
+                  </optgroup>
+                ))}
+            </select>
+          </div>
+          <div className="um-form-group">
+             <label>Rank Category (Auto)</label>
+             <input type="text" value={formData.rank} disabled style={{backgroundColor: '#e5e7eb'}} />
+          </div>
+          <div className="um-modal-actions">
+            <button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button>
+            <button type="submit" className="btn btn-primary">Save Changes</button>
+          </div>
+        </form>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 export default UserManagement;

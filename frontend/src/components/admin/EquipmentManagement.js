@@ -1,14 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { equipmentAPI } from '../../utils/api';
 import { toast } from 'react-toastify';
-import { Eye, Trash2 } from 'lucide-react';
+import { Eye, Trash2, Edit } from 'lucide-react';
 
-// 🟢 VALIDATION IMPORTS
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { equipmentPoolSchema } from '../../utils/validationSchemas';
 
-// Formats dates or returns 'N/A'
 const formatDate = (dateString) => {
   if (!dateString) return 'N/A';
   try {
@@ -24,6 +22,7 @@ const EquipmentManagement = () => {
   const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   const [showCreatePoolModal, setShowCreatePoolModal] = useState(false);
+  const [showEditPoolModal, setShowEditPoolModal] = useState(false); // ADDED
   const [showPoolDetailsModal, setShowPoolDetailsModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedPool, setSelectedPool] = useState(null);
@@ -80,6 +79,7 @@ const EquipmentManagement = () => {
 
   const handleCloseModals = () => {
     setShowCreatePoolModal(false);
+    setShowEditPoolModal(false); // ADDED
     setShowPoolDetailsModal(false);
     setShowDeleteModal(false);
     setSelectedPool(null);
@@ -121,6 +121,18 @@ const EquipmentManagement = () => {
   const handleRefresh = () => {
       handleCloseModals();
       fetchPools();
+  };
+
+  // ADDED: Edit Handlers
+  const handleEditPoolClick = (pool) => {
+    setSelectedPool(pool);
+    setShowEditPoolModal(true);
+  };
+
+  const handlePoolUpdateSuccess = () => {
+    setShowEditPoolModal(false);
+    setSelectedPool(null);
+    fetchPools();
   };
 
   if (loading && isInitialLoad) {
@@ -203,6 +215,16 @@ const EquipmentManagement = () => {
                     >
                       <Eye size={16} /> View
                     </button>
+                    
+                    {/* ADDED: Edit Button */}
+                    <button
+                      className="btn-action btn-action-primary"
+                      onClick={() => handleEditPoolClick(pool)}
+                      title="Edit Pool"
+                    >
+                      <Edit size={16} /> Edit
+                    </button>
+
                     <button
                       className="btn-action btn-action-danger"
                       onClick={() => handleDeleteClick(pool)}
@@ -225,6 +247,16 @@ const EquipmentManagement = () => {
           designations={designations}
           onClose={handleCloseModals}
           onSuccess={handleRefresh}
+        />
+      )}
+
+      {/* ADDED: Edit Pool Modal */}
+      {showEditPoolModal && selectedPool && (
+        <EditPoolModal
+          pool={selectedPool}
+          designations={designations}
+          onClose={handleCloseModals}
+          onSuccess={handlePoolUpdateSuccess}
         />
       )}
 
@@ -262,11 +294,8 @@ const EquipmentManagement = () => {
   );
 };
 
-// 🟢 UPDATED: CreatePoolModal with Explicit Error Messages
 const CreatePoolModal = ({ categories, designations, onClose, onSuccess }) => {
   const [loading, setLoading] = useState(false);
-
-  // Inline error style for consistency
   const errorStyle = { color: '#dc2626', fontSize: '12px', marginTop: '4px', display: 'block' };
 
   const { 
@@ -277,7 +306,7 @@ const CreatePoolModal = ({ categories, designations, onClose, onSuccess }) => {
     formState: { errors } 
   } = useForm({
     resolver: zodResolver(equipmentPoolSchema),
-    mode: "onChange", // Validate as you type
+    mode: "onChange",
     defaultValues: {
       authorizedDesignations: [],
       prefix: '',
@@ -329,7 +358,6 @@ const CreatePoolModal = ({ categories, designations, onClose, onSuccess }) => {
                 className={errors.poolName ? "error" : ""}
                 {...register("poolName")}
               />
-              {/* 🔴 Explicit Error Message */}
               {errors.poolName && <span style={errorStyle}>{errors.poolName.message}</span>}
             </div>
             
@@ -340,13 +368,11 @@ const CreatePoolModal = ({ categories, designations, onClose, onSuccess }) => {
                   <option value="">Select Category</option>
                   {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
                 </select>
-                {/* 🔴 Explicit Error Message */}
                 {errors.category && <span style={errorStyle}>{errors.category.message}</span>}
               </div>
               <div className="um-form-group">
                 <label>Sub-Category</label>
                 <input type="text" placeholder="e.g., Service Pistol" {...register("subCategory")} />
-                {/* 🔴 Explicit Error Message */}
                 {errors.subCategory && <span style={errorStyle}>{errors.subCategory.message}</span>}
               </div>
             </div>
@@ -355,13 +381,11 @@ const CreatePoolModal = ({ categories, designations, onClose, onSuccess }) => {
               <div className="um-form-group">
                 <label>Model *</label>
                 <input type="text" placeholder="e.g., Glock 17 Gen 5" className={errors.model ? "error" : ""} {...register("model")} />
-                {/* 🔴 Explicit Error Message */}
                 {errors.model && <span style={errorStyle}>{errors.model.message}</span>}
               </div>
               <div className="um-form-group">
                 <label>Manufacturer</label>
                 <input type="text" placeholder="e.g., Glock GmbH" {...register("manufacturer")} />
-                {/* 🔴 Explicit Error Message */}
                 {errors.manufacturer && <span style={errorStyle}>{errors.manufacturer.message}</span>}
               </div>
             </div>
@@ -373,7 +397,6 @@ const CreatePoolModal = ({ categories, designations, onClose, onSuccess }) => {
               <div className="um-form-group">
                 <label>Total Quantity *</label>
                 <input type="number" placeholder="e.g., 50" min="1" className={errors.totalQuantity ? "error" : ""} {...register("totalQuantity")} />
-                {/* 🔴 Explicit Error Message */}
                 {errors.totalQuantity && <span style={errorStyle}>{errors.totalQuantity.message}</span>}
               </div>
               <div className="um-form-group">
@@ -387,7 +410,6 @@ const CreatePoolModal = ({ categories, designations, onClose, onSuccess }) => {
                   {...register("prefix")}
                 />
                 <span className="um-field-hint">2-5 chars. Generates: {watch('prefix') || 'PFX'}-001...</span>
-                {/* 🔴 Explicit Error Message */}
                 {errors.prefix && <span style={errorStyle}>{errors.prefix.message}</span>}
               </div>
             </div>
@@ -408,7 +430,6 @@ const CreatePoolModal = ({ categories, designations, onClose, onSuccess }) => {
                 </label>
               ))}
             </div>
-            {/* 🔴 Explicit Error Message */}
             {errors.authorizedDesignations && <span style={errorStyle}>{errors.authorizedDesignations.message}</span>}
           </div>
 
@@ -417,7 +438,6 @@ const CreatePoolModal = ({ categories, designations, onClose, onSuccess }) => {
             <div className="um-form-group">
               <label>Location *</label>
               <input type="text" placeholder="e.g., Central Armory - Section A" className={errors.location ? "error" : ""} {...register("location")} />
-              {/* 🔴 Explicit Error Message */}
               {errors.location && <span style={errorStyle}>{errors.location.message}</span>}
             </div>
             
@@ -425,7 +445,6 @@ const CreatePoolModal = ({ categories, designations, onClose, onSuccess }) => {
               <div className="um-form-group">
                 <label>Purchase Date</label>
                 <input type="date" {...register("purchaseDate")} />
-                {/* 🔴 Explicit Error Message */}
                 {errors.purchaseDate && <span style={errorStyle}>{errors.purchaseDate.message}</span>}
               </div>
               <div className="um-form-group">
@@ -438,14 +457,12 @@ const CreatePoolModal = ({ categories, designations, onClose, onSuccess }) => {
             <div className="um-form-group">
               <label>Supplier</label>
               <input type="text" placeholder="e.g., Government Arms Procurement" {...register("supplier")} />
-              {/* 🔴 Explicit Error Message */}
               {errors.supplier && <span style={errorStyle}>{errors.supplier.message}</span>}
             </div>
             
             <div className="um-form-group">
               <label>Notes</label>
               <textarea placeholder="Additional notes about this equipment pool..." rows="3" {...register("notes")} />
-              {/* 🔴 Explicit Error Message */}
               {errors.notes && <span style={errorStyle}>{errors.notes.message}</span>}
             </div>
           </div>
@@ -454,6 +471,93 @@ const CreatePoolModal = ({ categories, designations, onClose, onSuccess }) => {
             <button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button>
             <button type="submit" className="btn btn-primary" disabled={loading}>
                 {loading ? 'Creating...' : 'Create Equipment Pool'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// ADDED: Edit Pool Modal Component
+const EditPoolModal = ({ pool, designations, onClose, onSuccess }) => {
+  const [loading, setLoading] = useState(false);
+  const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm({
+    defaultValues: {
+      poolName: pool.poolName,
+      location: pool.location,
+      notes: pool.notes,
+      authorizedDesignations: pool.authorizedDesignations || []
+    }
+  });
+
+  const currentDesignations = watch('authorizedDesignations') || [];
+
+  const handleDesignationToggle = (designation) => {
+    const newDesignations = currentDesignations.includes(designation)
+      ? currentDesignations.filter(d => d !== designation)
+      : [...currentDesignations, designation];
+    setValue('authorizedDesignations', newDesignations);
+  };
+
+  const onSubmit = async (data) => {
+    setLoading(true);
+    try {
+      await equipmentAPI.updateEquipmentPool(pool._id, data);
+      toast.success('Pool updated successfully');
+      onSuccess();
+    } catch (error) {
+      toast.error('Failed to update pool');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="um-modal-overlay" onClick={onClose}>
+      <div className="um-modal-content" onClick={e => e.stopPropagation()}>
+        <div className="um-modal-header">
+          <h3>Edit Pool: {pool.model}</h3>
+          <button className="um-modal-close" onClick={onClose}>×</button>
+        </div>
+        <form onSubmit={handleSubmit(onSubmit)} className="um-modal-form">
+          <div className="um-form-group">
+            <label>Pool Name</label>
+            <input type="text" {...register('poolName', { required: 'Name is required' })} />
+            {errors.poolName && <span className="error-text">{errors.poolName.message}</span>}
+          </div>
+          
+          <div className="um-form-group">
+            <label>Location</label>
+            <input type="text" {...register('location', { required: 'Location is required' })} />
+            {errors.location && <span className="error-text">{errors.location.message}</span>}
+          </div>
+
+          <div className="um-form-group">
+             <label>Authorized Designations</label>
+             <div className="um-designation-grid">
+              {designations.map(designation => (
+                <label key={designation} className="um-checkbox-label">
+                  <input 
+                    type="checkbox" 
+                    checked={currentDesignations.includes(designation)} 
+                    onChange={() => handleDesignationToggle(designation)} 
+                  />
+                  <span>{designation}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div className="um-form-group">
+            <label>Notes</label>
+            <textarea rows="3" {...register('notes')} />
+          </div>
+
+          <div className="um-modal-actions">
+            <button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button>
+            <button type="submit" className="btn btn-primary" disabled={loading}>
+              {loading ? 'Saving...' : 'Save Changes'}
             </button>
           </div>
         </form>

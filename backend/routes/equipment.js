@@ -3,6 +3,7 @@ const { body, validationResult } = require('express-validator');
 const EquipmentPool = require('../models/EquipmentPool');
 const User = require('../models/User');
 const Request = require('../models/Request');
+const OfficerHistory = require('../models/OfficerHistory'); // Added this import based on your delete logic
 const { auth } = require('../middleware/auth');
 const { adminOnly } = require('../middleware/roleCheck');
 
@@ -200,6 +201,49 @@ router.post('/pools', adminOnly, [
       success: false,
       message: 'Server error creating equipment pool'
     });
+  }
+});
+
+// @route   PUT /api/equipment/pools/:poolId
+// @desc    Update equipment pool details (Metadata only)
+router.put('/pools/:poolId', adminOnly, [
+  body('poolName').optional().trim().isLength({ min: 1 }),
+  body('location').optional().trim().isLength({ min: 1 }),
+  body('authorizedDesignations').optional().isArray(),
+  body('notes').optional().trim()
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ success: false, errors: errors.array() });
+    }
+
+    const { poolName, location, authorizedDesignations, notes } = req.body;
+    
+    const pool = await EquipmentPool.findById(req.params.poolId);
+    if (!pool) {
+      return res.status(404).json({ success: false, message: 'Pool not found' });
+    }
+
+    // Update fields if provided
+    if (poolName) pool.poolName = poolName;
+    if (location) pool.location = location;
+    if (authorizedDesignations) pool.authorizedDesignations = authorizedDesignations;
+    if (notes) pool.notes = notes;
+
+    pool.lastModifiedBy = req.user._id;
+
+    await pool.save();
+
+    res.json({
+      success: true,
+      message: 'Equipment pool updated successfully',
+      data: { pool }
+    });
+
+  } catch (error) {
+    console.error('Update pool error:', error);
+    res.status(500).json({ success: false, message: 'Server error updating pool' });
   }
 });
 
@@ -484,16 +528,9 @@ router.get('/currently-issued', adminOnly, async (req, res) => {
 });
 
 
-// ======== 🟢 1. THIS IS THE NEW ROUTE TO FIX THE BUG 🟢 ========
 // @route   GET /api/equipment/maintenance-items
-// @desc    Get all items marked as 'Maintenance'
-// @access  Private (Admin only)
 router.get('/maintenance-items', adminOnly, async (req, res) => {
   try {
-    // This aggregation pipeline is the fix.
-    // It finds all pools, unwinds the items,
-    // matches *only* items in Maintenance,
-    // and projects them as a flat array, including their full history.
     const maintenanceItems = await EquipmentPool.aggregate([
       { $unwind: '$items' },
       { $match: { 'items.status': 'Maintenance' } },
@@ -504,20 +541,17 @@ router.get('/maintenance-items', adminOnly, async (req, res) => {
           poolName: '$poolName',
           model: '$model',
           category: '$category',
-          
-          // Project the *entire* item sub-document
           uniqueId: '$items.uniqueId',
           status: '$items.status',
           condition: '$items.condition',
           location: '$items.location',
           usageHistory: '$items.usageHistory',
-          lostHistory: '$items.lostHistory', // <-- This is the key
+          lostHistory: '$items.lostHistory',
           maintenanceHistory: '$items.maintenanceHistory'
         }
       },
       {
         $addFields: {
-          // Add a sortable date field from the last maintenance log
           lastLogDate: { $max: '$maintenanceHistory.reportedDate' }
         }
       },
@@ -555,7 +589,6 @@ router.delete('/pools/:poolId', adminOnly, async (req, res) => {
     await EquipmentPool.findByIdAndDelete(req.params.poolId);
 
     // 2. AUTOMATIC CLEANUP: Remove this pool from all Officers' history
-    // We use the Pool ID to find and remove the specific history entries
     await OfficerHistory.updateMany(
       {}, 
       { $pull: { history: { equipmentPoolId: req.params.poolId } } }
@@ -715,7 +748,6 @@ router.post('/pools/mark-recovered', adminOnly, [
 
 
 // @route   POST /api/equipment/pools/write-off-lost
-// @route   POST /api/equipment/pools/write-off-lost
 router.post('/pools/write-off-lost', adminOnly, [
   body('poolId').isMongoId(),
   body('uniqueId').notEmpty(),
@@ -735,34 +767,25 @@ router.post('/pools/write-off-lost', adminOnly, [
     const item = pool.findItemByUniqueId(uniqueId);
     if (!item) return res.status(404).json({ success: false, message: 'Item not found' });
     
-    // ======== 🟢 LOGIC UPDATED HERE 🟢 ========
-
-    // 1. Check if already written off
     if (item.status === 'Lost') {
       return res.status(400).json({ success: false, message: 'This item has already been written off.' });
     }
 
-    // 2. Find the latest maintenance log
     const lastMaintLog = (item.maintenanceHistory && item.maintenanceHistory.length > 0)
       ? item.maintenanceHistory[item.maintenanceHistory.length - 1]
       : null;
 
-    // 3. Check if it's actually a lost item awaiting write-off
-    //    We check the reason and make sure it hasn't already been "fixed" (written off)
     if (!lastMaintLog || !lastMaintLog.reason.startsWith("ITEM REPORTED LOST") || lastMaintLog.fixedBy) {
       return res.status(400).json({ success: false, message: 'Item is not a lost item awaiting write-off.' });
     }
     
-    // 4. If checks pass, proceed
     item.status = 'Lost';
     item.condition = 'Out of Service'; 
     
-    // 5. Update the maintenance log entry (the one we just checked)
     lastMaintLog.fixedDate = new Date();
     lastMaintLog.fixedBy = req.user._id;
     lastMaintLog.action = `ITEM WRITTEN OFF. Status: Lost. Final Report: ${notes}`;
     
-    // 6. Update the corresponding lost history entry
     let lostLog = item.lostHistory.find(entry => entry.status === 'Under Investigation');
     if (lostLog) {
       lostLog.status = 'Closed';
@@ -779,6 +802,5 @@ router.post('/pools/write-off-lost', adminOnly, [
     res.status(500).json({ success: false, message: 'Server error writing off item' });
   }
 });
-
 
 module.exports = router;

@@ -16,13 +16,10 @@ let isRefreshing = false;
 // Request interceptor
 api.interceptors.request.use(
   (config) => {
-    // Add auth token to requests if it exists
     const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-
-    // Log request for debugging
     console.log(`🔄 ${config.method?.toUpperCase()} ${config.url}`);
     return config;
   },
@@ -32,7 +29,7 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor with better error handling
+// Response interceptor
 api.interceptors.response.use(
   (response) => {
     console.log(`✅ ${response.config.method?.toUpperCase()} ${response.config.url} - ${response.status}`);
@@ -41,42 +38,32 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // Handle network errors first
     if (!error.response) {
       console.error('❌ Network Error:', error.message);
-
       if (error.code === 'ECONNABORTED') {
         toast.error('Request timeout. Please try again.');
       } else if (error.message === 'Network Error') {
-        toast.error('Network error. Please check your connection and ensure the backend server is running on port 5000.');
+        toast.error('Network error. Check connection/backend.');
       } else {
-        toast.error('Unable to connect to server. Please check if the backend is running.');
+        toast.error('Unable to connect to server.');
       }
-
       return Promise.reject(error);
     }
 
     const { status, data } = error.response;
     console.error(`❌ ${originalRequest.method?.toUpperCase()} ${originalRequest.url} - ${status}:`, data?.message || 'Unknown error');
 
-    // Handle different HTTP status codes
     switch (status) {
       case 401:
-        // Unauthorized - handle token expiration
         if (!isRefreshing && !originalRequest._retry) {
           console.log('🔄 Token expired, attempting to refresh...');
-
-          // Try to refresh the authentication
           const token = localStorage.getItem('token');
           if (token) {
             originalRequest._retry = true;
-
             try {
-              // Check if token is still valid by calling /auth/me
               const response = await axios.get(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/auth/me`, {
                 headers: { Authorization: `Bearer ${token}` }
               });
-
               if (response.data.success) {
                 console.log('✅ Token is still valid, retrying request');
                 return api(originalRequest);
@@ -85,47 +72,34 @@ api.interceptors.response.use(
               console.log('❌ Token refresh failed');
             }
           }
-
-          // Token is invalid, clear session and redirect
           console.log('🧹 Clearing invalid session');
           localStorage.removeItem('token');
           delete api.defaults.headers.common['Authorization'];
-
-          // Dispatch custom event for AuthContext to handle
           window.dispatchEvent(new CustomEvent('auth-error'));
-
           toast.error('Session expired. Please login again.');
         }
         break;
-
       case 403:
-        toast.error('Access denied. You do not have permission to perform this action.');
+        toast.error('Access denied.');
         break;
-
       case 404:
-        // Don't show toast for 404s on background requests
         if (!originalRequest.url.includes('/dashboard')) {
           toast.error('Resource not found.');
         }
         break;
-
       case 422:
-        // Validation errors
         if (data.errors && Array.isArray(data.errors)) {
           data.errors.forEach(err => toast.error(err.msg || err.message));
         } else {
-          toast.error(data.message || 'Validation error occurred.');
+          toast.error(data.message || 'Validation error.');
         }
         break;
-
       case 429:
-        toast.error('Too many requests. Please slow down.');
+        toast.error('Too many requests.');
         break;
-
       case 500:
-        toast.error('Server error. Please try again later.');
+        toast.error('Server error.');
         break;
-
       default:
         if (data?.message) {
           toast.error(data.message);
@@ -133,12 +107,11 @@ api.interceptors.response.use(
           toast.error(`Error ${status}: Something went wrong.`);
         }
     }
-
     return Promise.reject(error);
   }
 );
 
-// Enhanced API methods with better error handling
+// Enhanced API methods
 export const authAPI = {
   login: async (credentials) => {
     try {
@@ -151,7 +124,6 @@ export const authAPI = {
       throw error;
     }
   },
-
   register: async (userData) => {
     try {
       console.log('📝 Attempting registration...');
@@ -163,15 +135,10 @@ export const authAPI = {
       throw error;
     }
   },
-
   logout: () => {
     console.log('🚪 Logging out...');
-    return api.post('/auth/logout').catch(() => {
-      // Ignore logout errors since we're clearing session anyway
-      console.log('ℹ️ Logout request failed, but proceeding with client-side logout');
-    });
+    return api.post('/auth/logout').catch(() => {});
   },
-
   getProfile: () => api.get('/auth/me'),
   updateProfile: (data) => api.put('/auth/profile', data),
   changePassword: (data) => api.post('/auth/change-password', data)
@@ -187,8 +154,6 @@ export const adminAPI = {
   approveRequest: (id, data) => api.put(`/admin/requests/${id}/approve`, data),
   rejectRequest: (id, data) => api.put(`/admin/requests/${id}/reject`, data),
   getReports: (params) => api.get('/admin/reports/summary', { params }),
-  
-  // ======== 🟢 ADDED 🟢 ========
   getUserHistory: (userId) => api.get(`/admin/users/${userId}/history`),
 };
 
@@ -204,89 +169,59 @@ export const officerAPI = {
     console.log('🔄 GET /equipment/authorized-pools', params);
     return api.get('/equipment/authorized-pools', { params });
   },
-  
   requestEquipmentFromPool: (data) => {
     console.log('🔄 POST /officer/equipment-requests/from-pool', data);
     return api.post('/officer/equipment-requests/from-pool', data);
   },
-
-  // ======== 🟢 ADDED 🟢 ========
   getMyHistory: () => api.get('/officer/my-history'),
 };
 
-
-// ============================================
-// EQUIPMENT POOL API ENDPOINTS (ADD TO api.js)
-// ============================================
-
 export const equipmentAPI = {
-
-  getMaintenanceItems: () => {
-    return api.get('/equipment/maintenance-items');
-  },
-  // Get all equipment pools
+  getMaintenanceItems: () => api.get('/equipment/maintenance-items'),
   getEquipmentPools: (params) => {
     console.log('🔄 GET /equipment/pools', params);
-    return api.get('/equipment/pools', { params }); // <-- CORRECT
+    return api.get('/equipment/pools', { params });
   },
-
-  // Get equipment pools by designation
   getEquipmentPoolsByDesignation: (designation) => {
     console.log('🔄 GET /equipment/pools/by-designation', { designation });
-    return api.get('/equipment/pools/by-designation', { // <-- CORRECT
-      params: { designation }
-    });
+    return api.get('/equipment/pools/by-designation', { params: { designation } });
   },
-
-  // Create new equipment pool
   createEquipmentPool: (poolData) => {
     console.log('🔄 POST /equipment/pools', poolData);
-    return api.post('/equipment/pools', poolData); // <-- CORRECT
+    return api.post('/equipment/pools', poolData);
   },
-
-  // Get specific pool details
   getEquipmentPoolDetails: (poolId) => {
     console.log(`🔄 GET /equipment/pools/${poolId}`);
-    return api.get(`/equipment/pools/${poolId}`); // <-- CORRECT
+    return api.get(`/equipment/pools/${poolId}`);
   },
-
-  // Issue equipment from pool
   issueEquipmentFromPool: (poolId, data) => {
     console.log(`🔄 POST /equipment/pools/${poolId}/issue`, data);
-    return api.post(`/equipment/pools/${poolId}/issue`, data); // <-- CORRECT
+    return api.post(`/equipment/pools/${poolId}/issue`, data);
   },
-
-  // Return equipment to pool
   returnEquipmentToPool: (poolId, data) => {
     console.log(`🔄 POST /equipment/pools/${poolId}/return`, data);
-    return api.post(`/equipment/pools/${poolId}/return`, data); // <-- CORRECT
+    return api.post(`/equipment/pools/${poolId}/return`, data);
   },
-
-  // Get item history
   getItemHistory: (poolId, uniqueId) => {
     console.log(`🔄 GET /equipment/pools/${poolId}/items/${uniqueId}/history`);
-    return api.get(`/equipment/pools/${poolId}/items/${uniqueId}/history`); // <-- CORRECT
+    return api.get(`/equipment/pools/${poolId}/items/${uniqueId}/history`);
   },
-
-  // Get my equipment history
   getMyEquipmentHistory: () => {
     console.log('🔄 GET /equipment/my-equipment-history');
-    return api.get('/equipment/my-equipment-history'); // <-- CORRECT
+    return api.get('/equipment/my-equipment-history');
   },
-
-  // Get currently issued equipment
   getCurrentlyIssuedEquipment: () => {
     console.log('🔄 GET /equipment/currently-issued');
-    return api.get('/equipment/currently-issued'); // <-- CORRECT
+    return api.get('/equipment/currently-issued');
   },
-
-  // Delete equipment pool
   deleteEquipmentPool: (poolId) => {
     console.log(`🔄 DELETE /equipment/pools/${poolId}`);
-    return api.delete(`/equipment/pools/${poolId}`); // <-- CORRECT
+    return api.delete(`/equipment/pools/${poolId}`);
   },
-  
-  // This calls the 'complete-maintenance' route you already have
+  updateEquipmentPool: (poolId, data) => {
+    console.log(`🔄 PUT /equipment/pools/${poolId}`, data);
+    return api.put(`/equipment/pools/${poolId}`, data);
+  },
   completeMaintenance: (data) => {
     console.log('🔄 POST /equipment/pools/complete-maintenance', data);
     return api.post('/equipment/pools/complete-maintenance', data);
@@ -295,14 +230,12 @@ export const equipmentAPI = {
     console.log('🔄 POST /equipment/pools/write-off-lost', data);
     return api.post('/equipment/pools/write-off-lost', data);
   },
-
   markAsRecovered: (data) => {
     console.log('🔄 POST /equipment/pools/mark-recovered', data);
     return api.post('/equipment/pools/mark-recovered', data);
   }
 };
 
-// Health check function
 export const checkServerHealth = async () => {
   try {
     console.log('🏥 Checking server health...');
@@ -314,23 +247,18 @@ export const checkServerHealth = async () => {
     return { healthy: true, data: response.data };
   } catch (error) {
     console.error('❌ Server health check failed:', error.message);
-
     if (error.code === 'ECONNREFUSED' || error.message === 'Network Error') {
-      toast.error('Backend server is not running. Please start the server with "npm run dev" in the backend folder.');
+      toast.error('Backend server is not running.');
     } else {
       toast.error('Unable to connect to backend server.');
     }
-
     return { healthy: false, error: error.message };
   }
 };
 
-// Test connection function
 export const testConnection = async () => {
   const health = await checkServerHealth();
-
   if (health.healthy) {
-    // Test auth endpoint
     try {
       await axios.get((process.env.REACT_APP_API_URL || 'http://localhost:5000/api') + '/auth/me');
       return { success: true, message: 'Connection successful' };
@@ -341,11 +269,9 @@ export const testConnection = async () => {
       return { success: false, message: 'Auth endpoint unreachable' };
     }
   }
-
   return { success: false, message: 'Server unreachable' };
 };
 
-// Utility functions
 export const handleApiError = (error, defaultMessage = 'An error occurred') => {
   if (error.response?.data?.message) {
     return error.response.data.message;
@@ -377,10 +303,7 @@ export const getStatusBadgeClass = (status) => {
     'Completed': 'badge-info',
     'Cancelled': 'badge-secondary'
   };
-
   return statusClasses[status] || 'badge-secondary';
 };
-
-
 
 export default api;
