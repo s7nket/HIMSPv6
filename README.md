@@ -1,152 +1,208 @@
-# HIMSP: Police Hardware Inventory Management System
+<a name="readme-top"></a>
 
-![Status](https://img.shields.io/badge/Status-Active_Development-brightgreen)
-![Stack](https://img.shields.io/badge/Stack-MERN-blue)
-![License](https://img.shields.io/badge/License-MIT-orange)
+<br />
+<div align="center">
+  <img src="https://cdn-icons-png.flaticon.com/512/2504/2504845.png" alt="Logo" width="80" height="80">
 
-> **Hardware Inventory Management System in Police Department**
+  <h1 align="center">HIMSP</h1>
+  <p align="center">
+    <b>Hardware Inventory Management System in Police Department</b>
+    <br />
+    A secure, MERN-stack solution for digitalizing police armory operations.
+    <br />
+    <br />
+    <a href="https://himsp.onrender.com/"><strong>View Live Demo »</strong></a>
+    <br />
+    <br />
+    <a href="https://github.com/your-username/police-inventory-system/issues">Report Bug</a>
+    ·
+    <a href="https://github.com/your-username/police-inventory-system/pulls">Request Feature</a>
+  </p>
+</div>
 
-## 📖 Overview
+<div align="center">
 
-Hardware inventory management in police departments is a vital yet challenging task due to the wide variety of equipment, including uniforms, communication devices, protective gear, and weapons. Currently, many departments rely on manual record-keeping, which is inefficient, time-consuming, and vulnerable to human error.
+![Status](https://img.shields.io/badge/Status-Active_Development-success?style=for-the-badge)
+![License](https://img.shields.io/badge/License-MIT-orange?style=for-the-badge)
+![Version](https://img.shields.io/badge/Version-1.0.0-blue?style=for-the-badge)
 
-**HIMSP** is a secure, role-based web platform designed to digitize and optimize this process. It allows centralized storage and retrieval of equipment data, accessible to both administrators and officers. This approach ensures accurate tracking, reduces manual workload, enhances accountability, and supports quick reassignment of resources during emergencies.
+</div>
+
+---
+
+<details>
+  <summary><b>📚 Table of Contents</b></summary>
+  <ol>
+    <li><a href="#about-the-project">About The Project</a></li>
+    <li><a href="#built-with">Built With</a></li>
+    <li><a href="#key-features">Key Features</a></li>
+    <li><a href="#getting-started">Getting Started</a></li>
+    <li><a href="#api-reference">API Reference</a></li>
+    <li><a href="#roadmap">Roadmap</a></li>
+    <li><a href="#contributing">Contributing</a></li>
+  </ol>
+</details>
+
+---
+
+## 🚔 About The Project
+
+**The Problem:**
+Managing police inventory—weapons, protective gear, and communication devices—is critical. Many departments still rely on manual logs or spreadsheets, leading to human error, slow retrieval times, and accountability gaps.
+
+**The Solution:**
+**HIMSP** is a comprehensive, role-based web platform designed to modernize this workflow. By centralizing data and digitizing requisitions, we ensure that every piece of equipment is tracked from the moment it is purchased to the moment it is retired.
+
+### 📸 Screenshots
+| Admin Dashboard | Officer Request Portal |
+|:---:|:---:|
+| ![Admin Dash](https://via.placeholder.com/400x200?text=Admin+Dashboard+Screenshot) | ![Officer View](https://via.placeholder.com/400x200?text=Officer+View+Screenshot) |
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+---
+
+## 🛠️ Built With
+
+This project relies on a robust **MERN** architecture.
+
+### Core Stack
+![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
+![NodeJS](https://img.shields.io/badge/Node.js-43853D?style=for-the-badge&logo=node.js&logoColor=white)
+![ExpressJS](https://img.shields.io/badge/Express.js-404D59?style=for-the-badge)
+![MongoDB](https://img.shields.io/badge/MongoDB-4EA94B?style=for-the-badge&logo=mongodb&logoColor=white)
+
+### Frontend Utilities
+![TailwindCSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
+![Framer](https://img.shields.io/badge/Framer-black?style=for-the-badge&logo=framer&logoColor=blue)
+![Recharts](https://img.shields.io/badge/Recharts-Data_Viz-ff69b4?style=for-the-badge)
+
+### Backend Security
+![JWT](https://img.shields.io/badge/JWT-Auth-black?style=for-the-badge&logo=JSON%20web%20tokens)
+![Helmet](https://img.shields.io/badge/Helmet-Security-green?style=for-the-badge)
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ---
 
 ## 🌟 Key Features
 
-### 👮 Officer Module
-* **Digital Requisitions:** Request equipment (weapons, radios, tactical gear) digitally.
-* **My Inventory:** View currently issued items and return deadlines.
-* **History Logs:** Access personal history of issued and returned items.
-* **One-Item-Per-Pool Policy:** Enforced logic to prevent officers from hoarding multiple items of the same type.
-* **Status Tracking:** Real-time updates on request approvals and rejections.
+### 👮 Officer Portal
+* **📦 Digital Requisitions:** Request equipment instantly with priority levels.
+* **📅 My History:** A complete timeline of every item ever issued or returned.
+* **🚫 Policy Enforcement:** Smart logic prevents hoarding (e.g., cannot request a 2nd Glock if one is already issued).
+* **🔔 Real-time Status:** Live tracking of request approvals, rejections, or maintenance notes.
 
-### 🛡️ Admin / Quartermaster Module
-* **Central Dashboard:** Visual analytics of stock levels, pending requests, and active loans.
-* **Inventory Control:** Add, update, or retire equipment pools.
-* **Request Management:** Approve or reject officer requests with specific remarks.
-* **User Management:** Detailed officer profiles, ranks, and designations.
-* **Maintenance & Loss Tracking:** Dedicated workflows for items reported as lost (FIR tracking) or under maintenance.
-* **System Sync Tools:** Utilities to fix history mismatches and clean up orphaned data.
+### 🛡️ Admin / Quartermaster Hub
+* **📊 Analytics Dashboard:** Visual charts showing stock levels, usage trends, and overdue items.
+* **🏭 Inventory Control:** Create, edit, or retire equipment pools (e.g., "Glock 17 Pool").
+* **📝 Approval Workflow:** Review officer requests with the ability to add remarks or reject with cause.
+* **🔍 Forensic Tracking:** Dedicated modules for tracking items involved in **FIRs (Lost)** or **Maintenance**.
+* **🧹 System Hygiene:** Automated tools to clean up history logs for deleted inventory.
 
----
-
-## 🛠️ Tech Stack
-
-### Frontend (Client)
-* **Framework:** React.js (v18)
-* **Styling:** Tailwind CSS, Framer Motion
-* **State & Validation:** React Hook Form, Zod
-* **Visualization:** Recharts (Data charts), Lucide React (Icons)
-* **HTTP Client:** Axios
-
-### Backend (Server)
-* **Runtime:** Node.js & Express.js
-* **Database:** MongoDB Atlas (Mongoose ODM)
-* **Authentication:** JWT (JSON Web Tokens) & BcryptJS
-* **Security:** Helmet (Headers), CORS protection
-* **Validation:** Express-validator
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ---
 
-## ⚙️ Architecture
+## 🚀 Getting Started
 
-The application follows the **MVC (Model-View-Controller)** architecture:
-* **Frontend:** React Single Page Application (SPA) running on port `3000`.
-* **Backend:** Express REST API running on port `5000` (auto-fallback to 5001+ if busy).
-* **Database:** MongoDB Cloud (Atlas) for secure data persistence.
-
----
-
-## 🚀 Installation & Setup
+Follow these steps to set up the project locally.
 
 ### Prerequisites
-* **Node.js** (v14 or higher)
-* **MongoDB Atlas** Account (or local MongoDB)
+* **Node.js** (v16+)
+* **MongoDB Atlas** URI (or local instance)
 
-### 1. Clone the Repository
-```bash
-git clone [https://github.com/your-username/police-inventory-system.git](https://github.com/your-username/police-inventory-system.git)
-cd police-inventory-system
+### Installation
+
+1.  **Clone the Repo**
+    ```sh
+    git clone [https://github.com/your-username/police-inventory-system.git](https://github.com/your-username/police-inventory-system.git)
+    cd police-inventory-system
+    ```
+
+2.  **Backend Setup**
+    ```sh
+    cd backend
+    npm install
+    ```
+    *Create a `.env` file in `/backend`:*
+    ```env
+    PORT=5000
+    MONGODB_URI=your_mongodb_connection_string
+    JWT_SECRET=your_secret_key
+    CLIENT_URL=http://localhost:3000
+    ```
+    *Start Server:*
+    ```sh
+    npm run dev
+    ```
+
+3.  **Frontend Setup**
+    ```sh
+    cd frontend
+    npm install
+    npm start
+    ```
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+---
+
+## 📂 Directory Structure
+
+A quick look at the top-level files and directories.
+
+```text
+police-inventory-system/
+├── backend/
+│   ├── config/         # DB connection logic
+│   ├── controllers/    # Route logic
+│   ├── middleware/     # Auth & Role checks
+│   ├── models/         # Mongoose Schemas (User, Pool, Request)
+│   ├── routes/         # API Endpoints (admin, officer, equipment)
+│   └── server.js       # Entry point
+│
+└── frontend/
+    ├── public/
+    └── src/
+        ├── components/ # Reusable UI components
+        ├── context/    # AuthContext & State
+        ├── pages/      # Dashboard, Inventory, Login pages
+        └── utils/      # API wrappers (axios)
 ````
 
-### 2\. Backend Setup
-
-Navigate to the server directory and install dependencies:
-
-```bash
-cd backend
-npm install
-```
-
-**Environment Variables:**
-Create a `.env` file in the `backend` folder with the following configuration:
-
-```env
-# Server Configuration
-PORT=5000
-NODE_ENV=development
-
-# Database Configuration
-# Replace with your own MongoDB Connection URI
-MONGODB_URI=mongodb+srv://<username>:<password>@cluster.mongodb.net/?appName=HIMSP
-
-# Security
-JWT_SECRET=your_super_secure_secret_key
-JWT_EXPIRES_IN=24h
-
-# Client Config
-CLIENT_URL=http://localhost:3000
-```
-
-Start the backend server:
-
-```bash
-npm run dev
-# Server should run on http://localhost:5000
-```
-
-### 3\. Frontend Setup
-
-Open a new terminal, navigate to the frontend directory, and install dependencies:
-
-```bash
-cd frontend
-npm install
-```
-
-Start the React development server:
-
-```bash
-npm start
-# Application will launch at http://localhost:3000
-```
+\<p align="right"\>(\<a href="\#readme-top"\>back to top\</a\>)\</p\>
 
 -----
 
 ## 📡 API Reference
 
-The backend exposes the following base routes:
+| Endpoint | Method | Description |
+| :--- | :---: | :--- |
+| `/api/auth/login` | POST | Authenticates user & returns JWT |
+| `/api/admin/dashboard` | GET | Fetches global stats & recent activity |
+| `/api/admin/fix-ghost-loans` | POST | **Utility:** Auto-fixes desynchronized history |
+| `/api/officer/requests` | POST | Submits a new equipment request |
+| `/api/equipment/pools` | GET | Lists all available equipment pools |
 
-| Module | Route | Description |
-| :--- | :--- | :--- |
-| **Auth** | `/api/auth` | Login, Register, Token Refresh |
-| **Admin** | `/api/admin` | Dashboard stats, User mgmt, Approvals, Sync utilities |
-| **Officer** | `/api/officer` | Dashboard, Request creation, History view |
-| **Equipment** | `/api/equipment` | Pool CRUD, Stock mgmt, Maintenance logs |
-| **Health** | `/api/health` | System health check and uptime |
+\<p align="right"\>(\<a href="\#readme-top"\>back to top\</a\>)\</p\>
 
 -----
 
-## 🧪 Future Enhancements
+## 🔮 Roadmap
 
-  * **RFID Integration:** Automated tracking of equipment movement.
-  * **Barcode Scanning:** Quick issue/return via handheld scanners.
-  * **Notifications:** Email/SMS alerts for overdue items.
+  - [ ] **RFID Integration:** Auto-check-in/out using hardware scanners.
+  - [ ] **Barcode Generation:** Generate printable QR codes for each item.
+  - [ ] **Notifications:** SMS/Email alerts for overdue returns.
+  - [ ] **Mobile App:** React Native mobile version for field officers.
+
+\<p align="right"\>(\<a href="\#readme-top"\>back to top\</a\>)\</p\>
+
+-----
 
 ## 🤝 Contributing
+
+Contributions are what make the open-source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
 
 1.  Fork the Project
 2.  Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
@@ -154,11 +210,15 @@ The backend exposes the following base routes:
 4.  Push to the Branch (`git push origin feature/AmazingFeature`)
 5.  Open a Pull Request
 
-## 📄 License
+\<p align="right"\>(\<a href="\#readme-top"\>back to top\</a\>)\</p\>
 
-This project is licensed under the **MIT License**.
+-----
 
-**Author:** s7n
+## 📝 License
+
+Distributed under the MIT License. See `LICENSE` for more information.
+
+\<p align="right"\>(\<a href="\#readme-top"\>back to top\</a\>)\</p\>
 
 ```
 ```
