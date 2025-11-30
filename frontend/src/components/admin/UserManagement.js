@@ -657,22 +657,53 @@ const UserManagement = () => {
 };
 
 // ADDED: Edit User Modal Component
+// ======== 🟢 UPDATED COMPONENT: SMART EDIT USER MODAL 🟢 ========
 const EditUserModal = ({ user, onClose, onUpdate }) => {
   const [formData, setFormData] = useState({
+    officerId: user.officerId || '', // Now editable via logic
     fullName: user.fullName || '',
     designation: user.designation || '',
     rank: user.rank || '',
     isActive: user.isActive
   });
 
+  // Helper to intelligently replace the rank part of the ID
+  const recalculateOfficerId = (currentId, newRankCode) => {
+    // Regex breakdown:
+    // Group 1: State (First 2 letters) -> ^([A-Z]{2})
+    // Group 2: Old Rank (Letters in between) -> ([A-Z]+)
+    // Group 3: Year & Serial (Digits at end) -> (\d+)$
+    const regex = /^([A-Z]{2})([A-Z]+)(\d+)$/;
+    const match = currentId.match(regex);
+
+    if (match) {
+      const state = match[1]; // e.g., 'KA'
+      const yearSerial = match[3]; // e.g., '20240012'
+      return `${state}${newRankCode}${yearSerial}`;
+    }
+    return currentId; // Return original if format doesn't match expected pattern
+  };
+
   const handleDesignationChange = (e) => {
     const newDest = e.target.value;
+    // Find rank category and code from RANKS_DATA
     const rankData = RANKS_DATA.find(r => r.designation === newDest);
-    setFormData(prev => ({
-      ...prev,
-      designation: newDest,
-      rank: rankData ? rankData.category : prev.rank
-    }));
+    
+    setFormData(prev => {
+      let updatedId = prev.officerId;
+      
+      // If we found the rank data, calculate the new ID
+      if (rankData && rankData.code) {
+        updatedId = recalculateOfficerId(prev.officerId, rankData.code);
+      }
+
+      return {
+        ...prev,
+        designation: newDest,
+        rank: rankData ? rankData.category : prev.rank,
+        officerId: updatedId
+      };
+    });
   };
 
   const handleSubmit = (e) => {
@@ -688,10 +719,23 @@ const EditUserModal = ({ user, onClose, onUpdate }) => {
           <button className="um-modal-close" onClick={onClose}>×</button>
         </div>
         <form onSubmit={handleSubmit} className="um-modal-form">
+          
           <div className="um-form-group">
-            <label>Officer ID (Read Only)</label>
-            <input type="text" value={user.officerId} disabled className="um-input-disabled" style={{backgroundColor: '#e5e7eb'}} />
+            <label>Officer ID (Auto-Updated)</label>
+            <input 
+              type="text" 
+              value={formData.officerId} 
+              // We keep it read-only for manual typing to prevent format errors, 
+              // but it updates programmatically via the dropdown below.
+              readOnly 
+              className="um-input-disabled" 
+              style={{ fontWeight: 'bold', color: '#2563eb' }}
+            />
+            <span className="um-field-hint">
+              Updates automatically when Designation changes.
+            </span>
           </div>
+
           <div className="um-form-group">
             <label>Full Name</label>
             <input 
@@ -701,6 +745,7 @@ const EditUserModal = ({ user, onClose, onUpdate }) => {
               required
             />
           </div>
+
           <div className="um-form-group">
             <label>Designation</label>
             <select value={formData.designation} onChange={handleDesignationChange} required>
@@ -715,10 +760,12 @@ const EditUserModal = ({ user, onClose, onUpdate }) => {
                 ))}
             </select>
           </div>
+
           <div className="um-form-group">
              <label>Rank Category (Auto)</label>
-             <input type="text" value={formData.rank} disabled style={{backgroundColor: '#e5e7eb'}} />
+             <input type="text" value={formData.rank} disabled style={{backgroundColor: '#f3f4f6'}} />
           </div>
+
           <div className="um-modal-actions">
             <button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button>
             <button type="submit" className="btn btn-primary">Save Changes</button>

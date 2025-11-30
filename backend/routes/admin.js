@@ -242,11 +242,11 @@ router.post('/users', [
 });
 
 // @route   PUT /api/admin/users/:id
-// ... (this route is unchanged)
 router.put('/users/:id', [
   body('fullName').optional().trim().isLength({ min: 3, max: 100 }),
   body('rank').optional().trim().isLength({ min: 1 }),
   body('designation').optional().trim().isLength({ min: 1 }),
+  body('officerId').optional().trim().isLength({ min: 10 }), // 🟢 Allow Officer ID update
   body('isActive').optional().isBoolean()
 ], async (req, res) => {
   try {
@@ -259,13 +259,30 @@ router.put('/users/:id', [
       });
     }
 
-    const { fullName, rank, designation, isActive } = req.body;
+    const { fullName, rank, designation, isActive, officerId } = req.body;
     const updates = {};
 
     if (fullName !== undefined) updates.fullName = fullName;
     if (rank !== undefined) updates.rank = rank;
     if (designation !== undefined) updates.designation = designation;
     if (isActive !== undefined) updates.isActive = isActive;
+
+    // 🟢 Logic to update Officer ID safely
+    if (officerId !== undefined) {
+      // Check if this ID is already taken by ANOTHER user
+      const existingUser = await User.findOne({ 
+        officerId: officerId, 
+        _id: { $ne: req.params.id } // Exclude current user
+      });
+      
+      if (existingUser) {
+        return res.status(400).json({ 
+          success: false, 
+          message: `Officer ID ${officerId} is already in use.` 
+        });
+      }
+      updates.officerId = officerId;
+    }
 
     const user = await User.findByIdAndUpdate(
       req.params.id,
