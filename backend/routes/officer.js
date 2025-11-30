@@ -442,7 +442,6 @@ router.get('/equipment/:id', adminOrOfficer, async (req, res) => {
 });
 
 // @route   POST /api/officer/equipment-requests/from-pool
-// ... (this route is unchanged)
 router.post('/equipment-requests/from-pool', officerOnly, [
   body('poolId').isMongoId().withMessage('Valid pool ID is required'),
   body('poolName').trim().isLength({ min: 1 }).withMessage('Pool name is required'),
@@ -460,6 +459,7 @@ router.post('/equipment-requests/from-pool', officerOnly, [
     
     const { poolId, poolName, reason, priority, expectedDuration, notes } = req.body;
     
+    // 1. Fetch the Pool
     const pool = await EquipmentPool.findById(poolId);
     if (!pool) {
       return res.status(404).json({
@@ -468,6 +468,7 @@ router.post('/equipment-requests/from-pool', officerOnly, [
       });
     }
     
+    // 2. Check counts and authorization
     pool.updateCounts();
     if (pool.availableCount === 0) {
       return res.status(400).json({
@@ -483,6 +484,7 @@ router.post('/equipment-requests/from-pool', officerOnly, [
       });
     }
     
+    // 3. Check for Pending Requests (Existing Logic)
     const existingRequest = await Request.findOne({
       requestedBy: req.user._id,
       poolId: poolId,
@@ -495,7 +497,25 @@ router.post('/equipment-requests/from-pool', officerOnly, [
         message: 'You already have a pending request for this equipment pool'
       });
     }
+
+    // ======== 🟢 NEW CHECK: PREVENT MULTIPLE ACTIVE LOANS 🟢 ========
+    // Check if the user ALREADY has an item issued from this specific pool.
+    const hasActiveLoan = pool.items.some(item => 
+      item.status === 'Issued' &&
+      item.currentlyIssuedTo && 
+      item.currentlyIssuedTo.userId && 
+      item.currentlyIssuedTo.userId.equals(req.user._id)
+    );
+
+    if (hasActiveLoan) {
+      return res.status(400).json({
+        success: false,
+        message: 'Request Denied: You already have an item issued from this pool. You must return it before requesting another.'
+      });
+    }
+    // ===============================================================
     
+    // 4. Create the Request
     const request = new Request({
       requestedBy: req.user._id,
       equipmentId: null,

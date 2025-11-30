@@ -445,8 +445,6 @@ router.get('/requests', async (req, res) => {
 });
 
 // @route   PUT /api/admin/requests/:id/approve
-// ... (this route is unchanged)
-// @route   PUT /api/admin/requests/:id/approve
 router.put('/requests/:id/approve', [
   body('notes').optional().isLength({ max: 500 }),
   body('condition').optional().isIn(['Excellent', 'Good', 'Fair', 'Poor', 'Out of Service'])
@@ -456,7 +454,7 @@ router.put('/requests/:id/approve', [
 
     const request = await Request.findById(req.params.id)
       .populate('poolId')
-      .populate('requestedBy'); // We need this to target the specific user's history
+      .populate('requestedBy'); 
 
     if (!request) {
       return res.status(404).json({ success: false, message: 'Request not found' });
@@ -465,7 +463,9 @@ router.put('/requests/:id/approve', [
       return res.status(400).json({ success: false, message: 'Request is not in pending status' });
     }
 
-    // --- Logic for ISSUE requests ---
+    // ============================================
+    // 1. LOGIC FOR ISSUE REQUESTS (Unchanged)
+    // ============================================
     if (request.requestType === 'Issue') {
       const pool = await EquipmentPool.findById(request.poolId._id);
       if (!pool) {
@@ -525,7 +525,9 @@ router.put('/requests/:id/approve', [
       }
     }
     
-    // --- Logic for RETURN requests (FIXED) ---
+    // ============================================
+    // 2. LOGIC FOR RETURN REQUESTS (Fixed)
+    // ============================================
     if (request.requestType === 'Return') {
       if (request.poolId && request.assignedUniqueId) {
         const pool = await EquipmentPool.findById(request.poolId);
@@ -533,19 +535,19 @@ router.put('/requests/:id/approve', [
         
         const returnCondition = condition || request.condition || 'Good';
 
-        // 1. Return item to pool
-        const returnedItem = await pool.returnItem(
+        // Return item to pool
+        await pool.returnItem(
           request.assignedUniqueId,
           returnCondition,
           request.reason,
           req.user._id
         );
         
-        // 2. Update Officer History -> 🟢 ADDED `userId` TO QUERY
+        // Update Officer History with Safety Fallback
         try {
-          await OfficerHistory.updateOne(
+          const updateResult = await OfficerHistory.updateOne(
             { 
-              userId: request.requestedBy._id, // Ensure we find ANU's record
+              userId: request.requestedBy._id,
               "history.itemUniqueId": request.assignedUniqueId, 
               "history.status": "Pending Return" 
             },
@@ -554,18 +556,42 @@ router.put('/requests/:id/approve', [
                 "history.$.returnedDate": new Date(),
                 "history.$.returnedTo": req.user._id,
                 "history.$.conditionAtReturn": returnCondition,
-                "history.$.remarks": request.reason, // Use Officer's reason
+                "history.$.remarks": request.reason,
                 "history.$.status": "Completed"
               }
             }
           );
+
+          // 🟢 FALLBACK: If standard update failed (e.g. case mismatch), do it manually
+          if (updateResult.modifiedCount === 0) {
+            console.log(`Using fallback history update for item ${request.assignedUniqueId}`);
+            const historyDoc = await OfficerHistory.findOne({ userId: request.requestedBy._id });
+            if (historyDoc) {
+              // Find entry case-insensitively
+              const entryIndex = historyDoc.history.findIndex(h => 
+                h.status === 'Pending Return' && 
+                h.itemUniqueId.toLowerCase() === request.assignedUniqueId.toLowerCase()
+              );
+              
+              if (entryIndex !== -1) {
+                historyDoc.history[entryIndex].returnedDate = new Date();
+                historyDoc.history[entryIndex].returnedTo = req.user._id;
+                historyDoc.history[entryIndex].conditionAtReturn = returnCondition;
+                historyDoc.history[entryIndex].remarks = request.reason;
+                historyDoc.history[entryIndex].status = "Completed";
+                await historyDoc.save();
+              }
+            }
+          }
         } catch (historyError) {
           console.error('Failed to update officer history on return:', historyError);
         }
       }
     }
     
-    // --- Logic for MAINTENANCE requests (FIXED) ---
+    // ============================================
+    // 3. LOGIC FOR MAINTENANCE REQUESTS (Fixed)
+    // ============================================
     if (request.requestType === 'Maintenance') {
       if (request.poolId && request.assignedUniqueId) {
         const pool = await EquipmentPool.findById(request.poolId);
@@ -576,7 +602,7 @@ router.put('/requests/:id/approve', [
 
         const maintCondition = request.condition || 'Poor';
 
-        // Pool updates...
+        // Pool updates
         const lastUsage = item.usageHistory.find(h => h.returnedDate === undefined);
         if (lastUsage) {
           lastUsage.returnedDate = new Date();
@@ -601,9 +627,9 @@ router.put('/requests/:id/approve', [
         pool.updateCounts();
         await pool.save({ validateBeforeSave: false });
 
-        // 🟢 ADDED `userId` TO QUERY
+        // Update Officer History with Safety Fallback
         try {
-          await OfficerHistory.updateOne(
+          const updateResult = await OfficerHistory.updateOne(
             { 
               userId: request.requestedBy._id,
               "history.itemUniqueId": request.assignedUniqueId, 
@@ -619,13 +645,34 @@ router.put('/requests/:id/approve', [
               }
             }
           );
+
+          // 🟢 FALLBACK
+          if (updateResult.modifiedCount === 0) {
+            const historyDoc = await OfficerHistory.findOne({ userId: request.requestedBy._id });
+            if (historyDoc) {
+              const entryIndex = historyDoc.history.findIndex(h => 
+                h.status === 'Pending Return' && 
+                h.itemUniqueId.toLowerCase() === request.assignedUniqueId.toLowerCase()
+              );
+              if (entryIndex !== -1) {
+                historyDoc.history[entryIndex].status = "Completed";
+                historyDoc.history[entryIndex].returnedDate = new Date();
+                historyDoc.history[entryIndex].returnedTo = req.user._id;
+                historyDoc.history[entryIndex].conditionAtReturn = maintCondition;
+                historyDoc.history[entryIndex].remarks = `Maintenance: ${request.reason}`;
+                await historyDoc.save();
+              }
+            }
+          }
         } catch (historyError) {
           console.error('Failed to update officer history on maintenance:', historyError);
         }
       }
     }
 
-    // --- Logic for LOST requests (FIXED) ---
+    // ============================================
+    // 4. LOGIC FOR LOST REQUESTS (Fixed)
+    // ============================================
     if (request.requestType === 'Lost') {
       if (request.poolId && request.assignedUniqueId) {
         const pool = await EquipmentPool.findById(request.poolId);
@@ -636,7 +683,7 @@ router.put('/requests/:id/approve', [
 
         const lostReason = `Reported Lost. FIR: ${request.firNumber || 'N/A'}. ${request.reason}`;
 
-        // Pool updates...
+        // Pool updates
         const lastUsage = item.usageHistory.find(h => h.returnedDate === undefined);
         if (lastUsage) {
           lastUsage.returnedDate = new Date();
@@ -675,9 +722,9 @@ router.put('/requests/:id/approve', [
         pool.updateCounts();
         await pool.save({ validateBeforeSave: false });
 
-        // 🟢 ADDED `userId` TO QUERY
+        // Update Officer History with Safety Fallback
         try {
-          await OfficerHistory.updateOne(
+          const updateResult = await OfficerHistory.updateOne(
             { 
               userId: request.requestedBy._id,
               "history.itemUniqueId": request.assignedUniqueId, 
@@ -693,6 +740,25 @@ router.put('/requests/:id/approve', [
               }
             }
           );
+
+          // 🟢 FALLBACK
+          if (updateResult.modifiedCount === 0) {
+            const historyDoc = await OfficerHistory.findOne({ userId: request.requestedBy._id });
+            if (historyDoc) {
+              const entryIndex = historyDoc.history.findIndex(h => 
+                h.status === 'Pending Return' && 
+                h.itemUniqueId.toLowerCase() === request.assignedUniqueId.toLowerCase()
+              );
+              if (entryIndex !== -1) {
+                historyDoc.history[entryIndex].status = "Completed";
+                historyDoc.history[entryIndex].returnedDate = new Date();
+                historyDoc.history[entryIndex].returnedTo = req.user._id;
+                historyDoc.history[entryIndex].conditionAtReturn = 'Poor';
+                historyDoc.history[entryIndex].remarks = lostReason;
+                await historyDoc.save();
+              }
+            }
+          }
         } catch (historyError) {
           console.error('Failed to update officer history on lost:', historyError);
         }
@@ -716,7 +782,7 @@ router.put('/requests/:id/approve', [
       message: error.message || 'Server error approving request',
     });
   }
-});
+});;
 
 // @route   PUT /api/admin/requests/:id/reject
 // ... (this route is unchanged)
@@ -889,5 +955,87 @@ async function generateHistoryRecordId() {
     return `${prefix}${(Math.floor(Math.random() * 9000) + 1000)}`; 
   }
 }
+
+// @route   POST /api/admin/fix-ghost-loans
+// @desc    Force closes history entries that are actually returned in the pool
+router.post('/fix-ghost-loans', async (req, res) => {
+  try {
+    const histories = await OfficerHistory.find();
+    let fixedCount = 0;
+
+    for (const doc of histories) {
+      let docModified = false;
+
+      for (const entry of doc.history) {
+        if (entry.status === 'Pending Return') {
+          // Check the REAL status in the Pool
+          const pool = await EquipmentPool.findOne({ 'items.uniqueId': entry.itemUniqueId });
+
+          if (pool) {
+            const realItem = pool.items.find(i => i.uniqueId === entry.itemUniqueId);
+            
+            // If item is physically NOT issued, or issued to someone else, close this history
+            const isActuallyReturned = realItem.status !== 'Issued';
+            const isIssuedToSomeoneElse = realItem.status === 'Issued' && 
+                                          realItem.currentlyIssuedTo && 
+                                          !realItem.currentlyIssuedTo.userId.equals(doc.userId);
+
+            if (isActuallyReturned || isIssuedToSomeoneElse) {
+              entry.status = 'Completed';
+              entry.returnedDate = new Date();
+              entry.conditionAtReturn = realItem.condition;
+              entry.remarks = "System Auto-Correction: Ghost loan closed.";
+              entry.returnedTo = req.user._id;
+              docModified = true;
+              fixedCount++;
+            }
+          }
+        }
+      }
+      if (docModified) await doc.save();
+    }
+
+    res.json({ success: true, message: `Fixed ${fixedCount} broken records.` });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// @route   POST /api/admin/clear-pool-history
+// @desc    Removes all history entries for a specific pool (by Name or ID)
+router.post('/clear-pool-history', async (req, res) => {
+  try {
+    const { poolName, poolId } = req.body;
+
+    if (!poolName && !poolId) {
+      return res.status(400).json({ success: false, message: 'Please provide poolName or poolId' });
+    }
+
+    // Determine what to remove based on what was provided
+    let pullQuery = {};
+    if (poolId) {
+        pullQuery = { equipmentPoolId: poolId };
+    } else {
+        pullQuery = { equipmentPoolName: poolName };
+    }
+
+    // Update ALL officer history documents
+    const result = await OfficerHistory.updateMany(
+      {}, 
+      { $pull: { history: pullQuery } }
+    );
+
+    res.json({
+      success: true,
+      message: `History cleaned for pool: ${poolName || poolId}. Modified ${result.modifiedCount} user records.`,
+      result
+    });
+
+
+  } catch (error) {
+    console.error('Clear pool history error:', error);
+    res.status(500).json({ success: false, message: 'Server error clearing history' });
+  }
+});
 
 module.exports = router;

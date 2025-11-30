@@ -24,7 +24,6 @@ function Landing() {
     setIsMenuOpen(!isMenuOpen);
   };
 
-  // ======== 🟢 MODIFIED THIS FUNCTION 🟢 ========
   const handleNavClick = (name) => {
     setActiveNav(name);
     setIsMenuOpen(false);
@@ -42,12 +41,10 @@ function Landing() {
     } else if (name === 'login') {
       navigate('/login');
     } 
-    // --- 'admin' block removed ---
     else if (name === 'home') {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
-  // ===============================================
 
   const handleLoginClick = () => {
     navigate('/login');
@@ -112,17 +109,25 @@ function Landing() {
     alert('Thank you for your inquiry. We will contact you soon.');
   };
 
+  // Helper to prevent default jump for placeholder links
+  const handlePlaceholderLink = (e) => {
+    e.preventDefault();
+  };
+
   return (
     <div className="landing-page-wrapper">
       {/* ===== NAVBAR ===== */}
       <nav className="navbar-fixed">
         <div className="navbar-inner">
-          <div className="navbar-brand-section">
+          <div 
+            className="navbar-brand-section" 
+            onClick={() => handleNavClick('home')}
+            style={{ cursor: 'pointer' }}
+          >
             <LockIcon size={24} className="brand-icon" strokeWidth={2} />
             <span className="brand-name">Police Inventory</span>
           </div>
 
-          {/* ======== 🟢 MODIFIED THIS BLOCK 🟢 ======== */}
           <ul className="navbar-links-desktop">
             <li>
               <button
@@ -148,7 +153,6 @@ function Landing() {
                 Login
               </button>
             </li>
-            {/* --- 'Admin' button list item removed --- */}
             <li>
               <button
                 className={`nav-link-btn ${activeNav === 'contact' ? 'active' : ''}`}
@@ -158,24 +162,20 @@ function Landing() {
               </button>
             </li>
           </ul>
-          {/* =============================================== */}
 
           <button className="menu-toggle-btn" onClick={handleMenuToggle}>
             {isMenuOpen ? <CloseIcon size={24} /> : <MenuIcon size={24} />}
           </button>
         </div>
 
-        {/* ======== 🟢 MODIFIED THIS BLOCK 🟢 ======== */}
         {isMenuOpen && (
           <div className="navbar-mobile-menu">
             <button onClick={() => handleNavClick('home')} className="mobile-menu-link">Home</button>
             <button onClick={() => handleNavClick('features')} className="mobile-menu-link">Features</button>
             <button onClick={() => handleNavClick('login')} className="mobile-menu-link">Login</button>
-            {/* --- 'Admin' button removed --- */}
             <button onClick={() => handleNavClick('contact')} className="mobile-menu-link">Contact</button>
           </div>
         )}
-        {/* =============================================== */}
       </nav>
 
       {/* ===== HERO SECTION ===== */}
@@ -359,7 +359,11 @@ function Landing() {
         <div className="footer-inner">
           <div className="footer-columns">
             <div className="footer-column">
-              <div className="footer-brand">
+              <div 
+                className="footer-brand"
+                onClick={() => handleNavClick('home')}
+                style={{ cursor: 'pointer' }}
+              >
                 <LockIcon size={20} />
                 <span>Police Inventory</span>
               </div>
@@ -368,29 +372,52 @@ function Landing() {
               </p>
             </div>
 
+            {/* Simplified for Police/Gov context */}
             <div className="footer-column">
-              <h4 className="footer-title">Product</h4>
+              <h4 className="footer-title">System</h4>
               <ul className="footer-list">
-                <li><a href="#features" className="footer-link">Features</a></li>
-                <li><a href="#pricing" className="footer-link">Pricing</a></li>
-                <li><a href="#security" className="footer-link">Security</a></li>
-                <li><a href="#docs" className="footer-link">Documentation</a></li>
+                <li>
+                  <a href="#home" className="footer-link" onClick={(e) => { e.preventDefault(); handleNavClick('home'); }}>
+                    Home
+                  </a>
+                </li>
+                <li>
+                  <a href="#features" className="footer-link" onClick={(e) => { e.preventDefault(); handleNavClick('features'); }}>
+                    Features
+                  </a>
+                </li>
+                <li>
+                  <a href="/login" className="footer-link" onClick={(e) => { e.preventDefault(); handleNavClick('login'); }}>
+                    Login Portal
+                  </a>
+                </li>
               </ul>
             </div>
 
             <div className="footer-column">
-              <h4 className="footer-title">Company</h4>
+              <h4 className="footer-title">Support & Security</h4>
               <ul className="footer-list">
-                <li><a href="#about" className="footer-link">About Us</a></li>
-                <li><a href="#contact" className="footer-link">Contact</a></li>
-                <li><a href="#privacy" className="footer-link">Privacy</a></li>
-                <li><a href="#terms" className="footer-link">Terms</a></li>
+                <li>
+                  <a href="#contact" className="footer-link" onClick={(e) => { e.preventDefault(); handleNavClick('contact'); }}>
+                    Contact Support
+                  </a>
+                </li>
+                <li>
+                  <a href="#security" className="footer-link" onClick={handlePlaceholderLink}>
+                    Security Protocols
+                  </a>
+                </li>
+                <li>
+                  <a href="#privacy" className="footer-link" onClick={handlePlaceholderLink}>
+                    Privacy Policy
+                  </a>
+                </li>
               </ul>
             </div>
           </div>
 
           <div className="footer-bottom">
-            <p className="footer-copyright">© 2025 Police Inventory System. Designed for excellence.</p>
+            <p className="footer-copyright">© 2025 Police Inventory System. Authorized Access Only.</p>
           </div>
         </div>
       </footer>

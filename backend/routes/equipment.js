@@ -537,24 +537,36 @@ router.get('/maintenance-items', adminOnly, async (req, res) => {
     });
   }
 });
-// =========================================================
 
 
 // @route DELETE /api/equipment/pools/:poolId
 router.delete('/pools/:poolId', adminOnly, async (req, res) => {
   try {
-    const pool = await EquipmentPool.findByIdAndDelete(req.params.poolId);
-    
+    const pool = await EquipmentPool.findById(req.params.poolId);
+
     if (!pool) {
       return res.status(404).json({
         success: false,
         message: 'Equipment pool not found'
       });
     }
+
+    // 1. Delete the Pool
+    await EquipmentPool.findByIdAndDelete(req.params.poolId);
+
+    // 2. AUTOMATIC CLEANUP: Remove this pool from all Officers' history
+    // We use the Pool ID to find and remove the specific history entries
+    await OfficerHistory.updateMany(
+      {}, 
+      { $pull: { history: { equipmentPoolId: req.params.poolId } } }
+    );
+    
+    // 3. Optional: Also clean up Requests related to this pool
+    await Request.deleteMany({ poolId: req.params.poolId });
     
     res.json({
       success: true,
-      message: 'Equipment pool deleted successfully'
+      message: 'Equipment pool and associated history deleted successfully'
     });
     
   } catch (error) {
