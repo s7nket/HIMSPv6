@@ -2,7 +2,7 @@
 
 <br />
 <div align="center">
-  <img src="https://cdn-icons-png.flaticon.com/512/2504/2504845.png" alt="Logo" width="80" height="80">
+  <img src="https://cdn-icons-png.flaticon.com/512/3222/3222638.png" alt="Logo" width="90" height="90">
 
   <h1 align="center">HIMSP</h1>
   <p align="center">
@@ -53,13 +53,6 @@ Managing police inventory—weapons, protective gear, and communication devices�
 **The Solution:**
 **HIMSP** is a comprehensive, role-based web platform designed to modernize this workflow. By centralizing data and digitizing requisitions, we ensure that every piece of equipment is tracked from the moment it is purchased to the moment it is retired.
 
-### 📸 Screenshots
-| Admin Dashboard | Officer Request Portal |
-|:---:|:---:|
-| ![Admin Dash](https://via.placeholder.com/400x200?text=Admin+Dashboard+Screenshot) | ![Officer View](https://via.placeholder.com/400x200?text=Officer+View+Screenshot) |
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
 ---
 
 ## 🛠️ Built With
@@ -81,8 +74,6 @@ This project relies on a robust **MERN** architecture.
 ![JWT](https://img.shields.io/badge/JWT-Auth-black?style=for-the-badge&logo=JSON%20web%20tokens)
 ![Helmet](https://img.shields.io/badge/Helmet-Security-green?style=for-the-badge)
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
 ---
 
 ## 🌟 Key Features
@@ -99,8 +90,6 @@ This project relies on a robust **MERN** architecture.
 * **📝 Approval Workflow:** Review officer requests with the ability to add remarks or reject with cause.
 * **🔍 Forensic Tracking:** Dedicated modules for tracking items involved in **FIRs (Lost)** or **Maintenance**.
 * **🧹 System Hygiene:** Automated tools to clean up history logs for deleted inventory.
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ---
 
@@ -144,8 +133,6 @@ Follow these steps to set up the project locally.
     npm start
     ```
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
 ---
 
 ## 📂 Directory Structure
@@ -171,8 +158,6 @@ police-inventory-system/
         └── utils/      # API wrappers (axios)
 ````
 
-\<p align="right"\>(\<a href="\#readme-top"\>back to top\</a\>)\</p\>
-
 -----
 
 ## 📡 API Reference
@@ -185,8 +170,6 @@ police-inventory-system/
 | `/api/officer/requests` | POST | Submits a new equipment request |
 | `/api/equipment/pools` | GET | Lists all available equipment pools |
 
-\<p align="right"\>(\<a href="\#readme-top"\>back to top\</a\>)\</p\>
-
 -----
 
 ## 🔮 Roadmap
@@ -195,8 +178,6 @@ police-inventory-system/
   - [ ] **Barcode Generation:** Generate printable QR codes for each item.
   - [ ] **Notifications:** SMS/Email alerts for overdue returns.
   - [ ] **Mobile App:** React Native mobile version for field officers.
-
-\<p align="right"\>(\<a href="\#readme-top"\>back to top\</a\>)\</p\>
 
 -----
 
@@ -210,15 +191,11 @@ Contributions are what make the open-source community such an amazing place to l
 4.  Push to the Branch (`git push origin feature/AmazingFeature`)
 5.  Open a Pull Request
 
-\<p align="right"\>(\<a href="\#readme-top"\>back to top\</a\>)\</p\>
-
 -----
 
 ## 📝 License
 
 Distributed under the MIT License. See `LICENSE` for more information.
-
-\<p align="right"\>(\<a href="\#readme-top"\>back to top\</a\>)\</p\>
 
 ```
 ```
