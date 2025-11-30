@@ -10,8 +10,12 @@ import {
   Grid3x3,
   Search,
   Lock as LockIcon,
-  ChevronDown,
-  ArrowRight
+  ArrowRight,
+  // New Icons for Workflow
+  FileText,
+  CheckCircle,
+  Package,
+  RefreshCw
 } from 'lucide-react';
 import './Landing.css';
 
@@ -30,18 +34,13 @@ function Landing() {
 
     if (name === 'features') {
       const element = document.getElementById('features-section');
-      if (element) {
-        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-    } else if (name === 'contact') {
-      const element = document.getElementById('contact-section');
-      if (element) {
-        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
+      if (element) element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else if (name === 'workflow') {
+      const element = document.getElementById('workflow-section');
+      if (element) element.scrollIntoView({ behavior: 'smooth', block: 'start' });
     } else if (name === 'login') {
       navigate('/login');
-    } 
-    else if (name === 'home') {
+    } else if (name === 'home') {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
@@ -96,6 +95,34 @@ function Landing() {
     }
   ];
 
+  // New Data for Workflow Section
+  const workflowSteps = [
+    {
+      id: 1,
+      icon: FileText,
+      title: '1. Digital Request',
+      description: 'Officers submit equipment requests via the secure portal, specifying priority and duration.'
+    },
+    {
+      id: 2,
+      icon: CheckCircle,
+      title: '2. Admin Approval',
+      description: 'Superiors review requests. Automated checks ensure the officer is authorized for the specific gear.'
+    },
+    {
+      id: 3,
+      icon: Package,
+      title: '3. Issue & Track',
+      description: 'Equipment is assigned unique IDs. The system logs the exact timestamp and condition at checkout.'
+    },
+    {
+      id: 4,
+      icon: RefreshCw,
+      title: '4. Return & Audit',
+      description: 'Upon return, items are inspected. Maintenance logs are auto-generated if damages are reported.'
+    }
+  ];
+
   const statsData = [
     { label: 'Checked-out Items', value: '148' },
     { label: 'Service Due', value: '23' },
@@ -103,11 +130,6 @@ function Landing() {
   ];
 
   const chartHeights = [65, 85, 72, 90, 78, 88, 70, 92];
-
-  const handleFormSubmit = (e) => {
-    e.preventDefault();
-    alert('Thank you for your inquiry. We will contact you soon.');
-  };
 
   // Helper to prevent default jump for placeholder links
   const handlePlaceholderLink = (e) => {
@@ -147,18 +169,18 @@ function Landing() {
             </li>
             <li>
               <button
-                className={`nav-link-btn ${activeNav === 'login' ? 'active' : ''}`}
-                onClick={() => handleNavClick('login')}
+                className={`nav-link-btn ${activeNav === 'workflow' ? 'active' : ''}`}
+                onClick={() => handleNavClick('workflow')}
               >
-                Login
+                Workflow
               </button>
             </li>
             <li>
               <button
-                className={`nav-link-btn ${activeNav === 'contact' ? 'active' : ''}`}
-                onClick={() => handleNavClick('contact')}
+                className={`nav-link-btn ${activeNav === 'login' ? 'active' : ''}`}
+                onClick={() => handleNavClick('login')}
               >
-                Contact
+                Login
               </button>
             </li>
           </ul>
@@ -172,8 +194,8 @@ function Landing() {
           <div className="navbar-mobile-menu">
             <button onClick={() => handleNavClick('home')} className="mobile-menu-link">Home</button>
             <button onClick={() => handleNavClick('features')} className="mobile-menu-link">Features</button>
+            <button onClick={() => handleNavClick('workflow')} className="mobile-menu-link">Workflow</button>
             <button onClick={() => handleNavClick('login')} className="mobile-menu-link">Login</button>
-            <button onClick={() => handleNavClick('contact')} className="mobile-menu-link">Contact</button>
           </div>
         )}
       </nav>
@@ -246,9 +268,6 @@ function Landing() {
                   </div>
                   <h3 className="feature-title">{feature.title}</h3>
                   <p className="feature-text">{feature.description}</p>
-                  <div className="feature-arrow">
-                    <ArrowRight size={16} />
-                  </div>
                 </div>
               );
             })}
@@ -292,64 +311,27 @@ function Landing() {
         </div>
       </section>
 
-      {/* ===== CONTACT SECTION ===== */}
-      <section className="contact-section" id="contact-section">
+      {/* ===== NEW: WORKFLOW SECTION (Replaces Contact) ===== */}
+      <section className="workflow-section" id="workflow-section">
         <div className="section-inner">
-          <div className="contact-header">
-            <h2 className="section-title">Get in Touch</h2>
-            <p className="contact-subtitle">We're here to help your department succeed</p>
+          <div className="section-header">
+            <h2 className="section-title">Operational Workflow</h2>
+            <p className="section-subtitle">Standardized procedures for maximum accountability</p>
           </div>
 
-          <div className="contact-form-card">
-            <form className="contact-form" onSubmit={handleFormSubmit}>
-              <div className="form-field-group">
-                <label className="form-label">Agency Name</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  placeholder="Enter your agency name"
-                  required
-                />
-              </div>
-
-              <div className="form-field-group">
-                <label className="form-label">Email Address</label>
-                <input
-                  type="email"
-                  className="form-input"
-                  placeholder="contact@agency.gov"
-                  required
-                />
-              </div>
-
-              <div className="form-field-group">
-                <label className="form-label">Subject</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  placeholder="How can we help?"
-                  required
-                />
-              </div>
-
-              <div className="form-field-group">
-                <label className="form-label">Message</label>
-                <textarea
-                  className="form-textarea"
-                  rows="5"
-                  placeholder="Tell us about your needs..."
-                  required
-                />
-              </div>
-
-              <div className="security-warning-box">
-                <span className="warning-icon">⚠</span> Do not share classified information
-              </div>
-
-              <button type="submit" className="btn-primary btn-full-width">
-                Send Message
-              </button>
-            </form>
+          <div className="workflow-grid">
+            {workflowSteps.map((step) => {
+              const IconComponent = step.icon;
+              return (
+                <div key={step.id} className="workflow-card">
+                  <div className="workflow-icon-wrapper">
+                    <IconComponent size={40} className="workflow-icon" />
+                  </div>
+                  <h3 className="workflow-step-title">{step.title}</h3>
+                  <p className="workflow-step-desc">{step.description}</p>
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -372,9 +354,8 @@ function Landing() {
               </p>
             </div>
 
-            {/* Simplified for Police/Gov context */}
             <div className="footer-column">
-              <h4 className="footer-title">System</h4>
+              <h4 className="footer-title">Navigation</h4>
               <ul className="footer-list">
                 <li>
                   <a href="#home" className="footer-link" onClick={(e) => { e.preventDefault(); handleNavClick('home'); }}>
@@ -387,6 +368,11 @@ function Landing() {
                   </a>
                 </li>
                 <li>
+                  <a href="#workflow" className="footer-link" onClick={(e) => { e.preventDefault(); handleNavClick('workflow'); }}>
+                    Workflow
+                  </a>
+                </li>
+                <li>
                   <a href="/login" className="footer-link" onClick={(e) => { e.preventDefault(); handleNavClick('login'); }}>
                     Login Portal
                   </a>
@@ -395,16 +381,16 @@ function Landing() {
             </div>
 
             <div className="footer-column">
-              <h4 className="footer-title">Support & Security</h4>
+              <h4 className="footer-title">Security & Policy</h4>
               <ul className="footer-list">
                 <li>
-                  <a href="#contact" className="footer-link" onClick={(e) => { e.preventDefault(); handleNavClick('contact'); }}>
-                    Contact Support
+                  <a href="#security" className="footer-link" onClick={handlePlaceholderLink}>
+                    Data Protection
                   </a>
                 </li>
                 <li>
-                  <a href="#security" className="footer-link" onClick={handlePlaceholderLink}>
-                    Security Protocols
+                  <a href="#audit" className="footer-link" onClick={handlePlaceholderLink}>
+                    Audit Protocols
                   </a>
                 </li>
                 <li>

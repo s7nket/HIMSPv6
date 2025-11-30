@@ -1,8 +1,5 @@
-
-/* 
- * === POLICE INVENTORY - PROFESSIONAL LANDING PAGE ===
+/* * === POLICE INVENTORY - PROFESSIONAL LANDING PAGE ===
  * Modern SaaS design with left-aligned content
- * Built with 10+ years of frontend expertise
  */
 
 @import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&display=swap');
@@ -185,7 +182,7 @@ body,
   display: none;
 }
 
-/* ========== HERO SECTION - LEFT ALIGNED ========== */
+/* ========== HERO SECTION ========== */
 .hero-section {
   padding: var(--space-24) var(--space-8) var(--space-20);
   margin-top: 64px;
@@ -318,7 +315,7 @@ body,
   aspect-ratio: 16 / 9;
 }
 
-/* ========== FEATURES SECTION - LEFT ALIGNED ========== */
+/* ========== FEATURES SECTION ========== */
 .features-section {
   padding: var(--space-20) var(--space-8);
   background: var(--color-white);
@@ -429,7 +426,7 @@ body,
   transform: translateX(0);
 }
 
-/* ========== OVERVIEW SECTION - LEFT ALIGNED ========== */
+/* ========== OVERVIEW SECTION ========== */
 .overview-section {
   padding: var(--space-20) var(--space-8);
   background: var(--color-gray-50);
@@ -530,100 +527,50 @@ body,
   transform: scaleY(1.05);
 }
 
-/* ========== CONTACT SECTION - LEFT ALIGNED ========== */
-.contact-section {
+/* ========== WORKFLOW SECTION (Replaces Contact) ========== */
+.workflow-section {
   padding: var(--space-20) var(--space-8);
   background: var(--color-white);
 }
 
-.contact-header {
-  text-align: left;
-  margin-bottom: var(--space-12);
-  max-width: 720px;
-}
-
-.contact-subtitle {
-  font-size: var(--text-5xl);
-  font-weight: var(--weight-bold);
-  color: var(--color-gray-900);
-  margin-bottom: var(--space-4);
-  letter-spacing: -0.8px;
-  line-height: 1.15;
-}
-
-.contact-form-card {
-  max-width: 800px;
-  margin: 0 auto;
-  background: var(--color-gray-50);
-  border: 1px solid var(--color-gray-300);
-  padding: var(--space-10);
-  border-radius: var(--radius-lg);
-}
-
-.contact-form {
-  display: flex;
-  flex-direction: column;
+.workflow-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
   gap: var(--space-6);
 }
 
-.form-field-group {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-.form-label {
-  font-size: var(--text-base);
-  font-weight: var(--weight-medium);
-  color: var(--color-gray-900);
+.workflow-card {
+  background: var(--color-white);
+  padding: var(--space-8);
+  border-left: 4px solid var(--color-blue);
+  border-radius: var(--radius-sm);
+  background: var(--color-gray-50);
+  transition: all var(--transition);
   text-align: left;
 }
 
-.form-input,
-.form-textarea {
+.workflow-card:hover {
+  transform: translateY(-4px);
   background: var(--color-white);
-  border: 1px solid var(--color-gray-300);
-  padding: 12px 16px;
-  border-radius: var(--radius-md);
-  font-size: var(--text-base);
+  box-shadow: var(--shadow-md);
+}
+
+.workflow-icon-wrapper {
+  margin-bottom: var(--space-5);
+  color: var(--color-blue);
+}
+
+.workflow-step-title {
+  font-size: var(--text-xl);
+  font-weight: var(--weight-bold);
   color: var(--color-gray-900);
-  font-family: var(--font-primary);
-  transition: all var(--transition);
+  margin-bottom: var(--space-3);
 }
 
-.form-input::placeholder,
-.form-textarea::placeholder {
-  color: var(--color-gray-500);
-}
-
-.form-input:focus,
-.form-textarea:focus {
-  outline: none;
-  border-color: var(--color-blue);
-  background: var(--color-white);
-  box-shadow: 0 0 0 2px rgba(0, 113, 227, 0.1);
-}
-
-.form-textarea {
-  resize: vertical;
-  min-height: 120px;
-}
-
-.security-warning-box {
-  font-size: var(--text-sm);
-  color: var(--color-gray-700);
-  background: var(--color-gray-100);
-  padding: var(--space-4);
-  border-left: 3px solid var(--color-blue);
-  border-radius: var(--radius-sm);
+.workflow-step-desc {
+  font-size: var(--text-base);
+  color: var(--color-gray-600);
   line-height: 1.5;
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-}
-
-.warning-icon {
-  font-size: var(--text-lg);
 }
 
 /* ========== FOOTER ========== */
@@ -719,6 +666,10 @@ body,
     grid-template-columns: repeat(2, 1fr);
   }
 
+  .workflow-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
   .footer-columns {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -789,8 +740,7 @@ body,
   }
 
   .section-title,
-  .overview-subtitle,
-  .contact-subtitle {
+  .overview-subtitle {
     font-size: var(--text-4xl);
   }
 
@@ -802,13 +752,13 @@ body,
     grid-template-columns: 1fr;
   }
 
+  .workflow-grid {
+    grid-template-columns: 1fr;
+  }
+
   .footer-columns {
     grid-template-columns: 1fr;
     gap: var(--space-8);
-  }
-
-  .contact-form-card {
-    padding: var(--space-6);
   }
 }
 
@@ -822,8 +772,7 @@ body,
   }
 
   .section-title,
-  .overview-subtitle,
-  .contact-subtitle {
+  .overview-subtitle {
     font-size: var(--text-3xl);
   }
 
@@ -832,7 +781,8 @@ body,
   }
 
   .feature-card-item,
-  .stat-card-item {
+  .stat-card-item,
+  .workflow-card {
     padding: var(--space-5);
   }
 }
