@@ -464,9 +464,19 @@ router.get('/requests', async (req, res) => {
 // @route   PUT /api/admin/requests/:id/approve
 router.put('/requests/:id/approve', [
   body('notes').optional().isLength({ max: 500 }),
-  body('condition').optional().isIn(['Excellent', 'Good', 'Fair', 'Poor', 'Out of Service'])
+  // 🟢 CHANGED: Added 'Lost' to the allowed conditions so validation doesn't fail
+  body('condition').optional().isIn(['Excellent', 'Good', 'Fair', 'Poor', 'Out of Service', 'Lost'])
 ], async (req, res) => {
   try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation errors',
+        errors: errors.array()
+      });
+    }
+
     const { notes, condition } = req.body;
 
     const request = await Request.findById(req.params.id)
@@ -688,7 +698,7 @@ router.put('/requests/:id/approve', [
     }
 
     // ============================================
-    // 4. LOGIC FOR LOST REQUESTS (Fixed)
+    // 4. LOGIC FOR LOST REQUESTS (Fixed & Improved)
     // ============================================
     if (request.requestType === 'Lost') {
       if (request.poolId && request.assignedUniqueId) {
@@ -713,18 +723,19 @@ router.put('/requests/:id/approve', [
         item.condition = 'Out of Service';
         item.currentlyIssuedTo = undefined;
         
+        // 🟢 CHANGED: Added fallbacks (|| 'N/A') for required fields to prevent crashing if request missing data
         item.lostHistory.push({
           reportedDate: new Date(),
           reportedBy: request.requestedBy._id,
-          firNumber: request.firNumber,
-          firDate: request.firDate,
+          firNumber: request.firNumber || 'PENDING',
+          firDate: request.firDate || new Date(),
           description: request.reason,
           status: 'Under Investigation',
-          policeStation: request.policeStation,
-          dateOfLoss: request.dateOfLoss,
-          placeOfLoss: request.placeOfLoss,
-          dutyAtTimeOfLoss: request.dutyAtTimeOfLoss,
-          remedialActionTaken: request.remedialActionTaken
+          policeStation: request.policeStation || 'N/A',
+          dateOfLoss: request.dateOfLoss || new Date(),
+          placeOfLoss: request.placeOfLoss || 'N/A',
+          dutyAtTimeOfLoss: request.dutyAtTimeOfLoss || 'N/A',
+          remedialActionTaken: request.remedialActionTaken || 'N/A'
         });
 
         item.maintenanceHistory.push({

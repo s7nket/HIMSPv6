@@ -107,8 +107,8 @@ export const equipmentPoolSchema = z.object({
 
 // --- 📋 5. ADMIN APPROVAL SCHEMA ---
 export const adminApprovalSchema = z.object({
-  notes: z.string().optional().refine((val) => !val || isMeaningful(val), "Notes must be meaningful."),
-  condition: z.enum(['Excellent', 'Good', 'Fair', 'Poor', 'Out of Service']).optional(),
+  notes: z.string().max(500, 'Notes must be less than 500 characters').optional(),
+  condition: z.enum(['Excellent', 'Good', 'Fair', 'Poor', 'Out of Service', 'Lost']).optional(),
 });
 
 // --- 📋 6. ADMIN REJECTION SCHEMA ---

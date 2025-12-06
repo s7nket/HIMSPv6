@@ -340,7 +340,7 @@ const ApprovalModal = ({ request, onClose, onSuccess }) => {
             </div>
           )}
 
-          {(request.requestType === 'Return' || request.requestType === 'Maintenance') && (
+          {(request.requestType === 'Return' || request.requestType === 'Maintenance') ? (
             <div className="um-form-group">
               <label className="um-form-label">Officer Reported Condition</label>
               <select className="um-form-group select" {...register("condition")}>
@@ -352,6 +352,8 @@ const ApprovalModal = ({ request, onClose, onSuccess }) => {
               </select>
               <span className="um-field-hint">Confirm the condition before approving.</span>
             </div>
+          ) : (
+            <input type="hidden" value={request.condition || "Lost"} {...register("condition")} />
           )}
 
           <div className="um-form-group">
